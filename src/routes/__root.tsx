@@ -73,14 +73,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "GSRTC| Booking/Tracking" },
+      { name: "description", content: "GSRTC is a bus tracking and booking app for Gujarat State Road Transport Corporation." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "GSRTC| Booking/Tracking" },
+      { property: "og:description", content: "GSRTC is a bus tracking and booking app for Gujarat State Road Transport Corporation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "GSRTC| Booking/Tracking" },
+      { name: "twitter:description", content: "GSRTC is a bus tracking and booking app for Gujarat State Road Transport Corporation." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ba96acb-0bf0-410f-8c78-1a8b9d71b51d/id-preview-ede2ae98--b6d7e191-9e61-4788-a6fb-17363ff608e2.lovable.app-1778504148401.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ba96acb-0bf0-410f-8c78-1a8b9d71b51d/id-preview-ede2ae98--b6d7e191-9e61-4788-a6fb-17363ff608e2.lovable.app-1778504148401.png" },
     ],
     links: [
       {
