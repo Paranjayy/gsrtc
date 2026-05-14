@@ -5,30 +5,20 @@
  *   POST /api/vehicle/live    → lat/lng + basic telemetry  (~30s poll cadence)
  *   POST /api/vehicle/tooltip → speed, direction, service, depot
  *
- * Auth: gsrtc_auth_token from localStorage is sent as a Bearer token.
+ * Auth: Token is stored as a Cloudflare Worker secret (GSRTC_TOKEN).
+ * The Worker injects it server-side — the browser never sees the token.
  *
- * CORS NOTE: Both endpoints live on live.gsrtc.org which doesn't allow
- * cross-origin requests. In production, proxy via a Cloudflare Worker or
- * a Vite dev-proxy entry in vite.config.ts.
- *
- * OPRS Schedule: gsrtc.in/opronline/jgreq.do — similarly CORS-restricted.
+ * Frontend only needs VITE_PROXY_BASE pointing to the Worker URL.
  */
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-/** Set to your Cloudflare Worker / backend proxy URL in .env */
+/** Cloudflare Worker URL — set VITE_PROXY_BASE in .env.local or Vercel env vars */
 const PROXY_BASE = import.meta.env.VITE_PROXY_BASE ?? "";
-const VTS_BASE   = PROXY_BASE ? `${PROXY_BASE}/vts`  : "https://live.gsrtc.org";
-const OPRS_BASE  = PROXY_BASE ? `${PROXY_BASE}/oprs` : "https://gsrtc.in/opronline";
+const VTS_BASE   = PROXY_BASE ? `${PROXY_BASE}/vts`  : null;
+const OPRS_BASE  = PROXY_BASE ? `${PROXY_BASE}/oprs` : null;
 
-function authHeader(): HeadersInit {
-  const token = typeof window !== "undefined"
-    ? localStorage.getItem("gsrtc_auth_token")
-    : null;
-  return token
-    ? { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
-    : { "Content-Type": "application/json" };
-}
+const JSON_HEADERS: HeadersInit = { "Content-Type": "application/json" };
 
 // ── Response shapes (inferred from payload sizes + screenshot) ────────────────
 
@@ -81,10 +71,11 @@ export function normaliseVehicleNo(raw: string): string {
  * Mirrors the 30-second poll cadence observed in network traffic.
  */
 export async function fetchVtsLive(vehicleNo: string): Promise<VtsLiveResponse> {
+  if (!VTS_BASE) throw new Error("No proxy configured — set VITE_PROXY_BASE");
   const body = JSON.stringify({ vehicleNumber: normaliseVehicleNo(vehicleNo) });
   const res  = await fetch(`${VTS_BASE}/api/vehicle/live`, {
     method:  "POST",
-    headers: authHeader(),
+    headers: JSON_HEADERS,
     body,
   });
   if (!res.ok) throw new Error(`VTS live: ${res.status}`);
@@ -96,10 +87,11 @@ export async function fetchVtsLive(vehicleNo: string): Promise<VtsLiveResponse> 
  * The official site fires this right after /live — we replicate that pattern.
  */
 export async function fetchVtsTooltip(vehicleNo: string): Promise<VtsTooltipResponse> {
+  if (!VTS_BASE) throw new Error("No proxy configured — set VITE_PROXY_BASE");
   const body = JSON.stringify({ vehicleNumber: normaliseVehicleNo(vehicleNo) });
   const res  = await fetch(`${VTS_BASE}/api/vehicle/tooltip`, {
     method:  "POST",
-    headers: authHeader(),
+    headers: JSON_HEADERS,
     body,
   });
   if (!res.ok) throw new Error(`VTS tooltip: ${res.status}`);
@@ -134,23 +126,21 @@ export interface OprsSearchParams {
  * The official site uses a form POST with URL-encoded body.
  */
 export async function fetchOprsSchedule(params: OprsSearchParams): Promise<OprsTripResult[]> {
+  if (!OPRS_BASE) throw new Error("No proxy configured — set VITE_PROXY_BASE");
   const body = new URLSearchParams({
-    hiddenaction: "searchserviceforhome",
-    src:          params.source,
-    dst:          params.destination,
-    doj:          params.date,         // "DD/MM/YYYY"
+    hiddenaction:  "searchserviceforhome",
+    src:           params.source,
+    dst:           params.destination,
+    doj:           params.date,
     noOfPassenger: String(params.passengers ?? 1),
   });
-
   const res = await fetch(`${OPRS_BASE}/jgreq.do?hiddenaction=searchserviceforhome`, {
     method:  "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", ...authHeader() },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body:    body.toString(),
   });
   if (!res.ok) throw new Error(`OPRS search: ${res.status}`);
-  // Response is HTML — will need server-side scraping or proxy to return JSON.
-  // When proxy is set up, return res.json(); for now return [].
-  return [];
+  return res.json() as Promise<OprsTripResult[]>;
 }
 
 // ── VTS share-link decode ─────────────────────────────────────────────────────
@@ -168,18 +158,5 @@ export function buildOfficialStatusUrl(encryptedVno: string, encryptedDoj: strin
   return `https://www.gsrtc.in/Notify/VTS.do?VNO=${encryptedVno}&DOJ=${encryptedDoj}`;
 }
 
-// ── Token management ──────────────────────────────────────────────────────────
-
-export function getAuthToken(): string | null {
-  return typeof window !== "undefined"
-    ? localStorage.getItem("gsrtc_auth_token")
-    : null;
-}
-
-export function setAuthToken(token: string) {
-  localStorage.setItem("gsrtc_auth_token", token);
-}
-
-export function clearAuthToken() {
-  localStorage.removeItem("gsrtc_auth_token");
-}
+/** hasProxy — true when VITE_PROXY_BASE is configured */
+export const hasProxy = !!PROXY_BASE;
