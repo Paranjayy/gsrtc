@@ -16,6 +16,7 @@
 /** Cloudflare Worker URL — set VITE_PROXY_BASE in .env.local or Vercel env vars */
 const PROXY_BASE = import.meta.env.VITE_PROXY_BASE ?? "";
 const VTS_BASE   = PROXY_BASE ? `${PROXY_BASE}/vts`  : null;
+// Correct OPRS path: gsrtc.in/OPRSOnline/jqreq.do (NOT opronline/jgreq.do)
 const OPRS_BASE  = PROXY_BASE ? `${PROXY_BASE}/oprs` : null;
 
 const JSON_HEADERS: HeadersInit = { "Content-Type": "application/json" };
@@ -128,19 +129,21 @@ export interface OprsSearchParams {
 export async function fetchOprsSchedule(params: OprsSearchParams): Promise<OprsTripResult[]> {
   if (!OPRS_BASE) throw new Error("No proxy configured — set VITE_PROXY_BASE");
   const body = new URLSearchParams({
-    hiddenaction:  "searchserviceforhome",
+    hiddenAction:  "SearchServiceForHome",
     src:           params.source,
     dst:           params.destination,
-    doj:           params.date,
+    doj:           params.date,              // "DD/MM/YYYY"
     noOfPassenger: String(params.passengers ?? 1),
   });
-  const res = await fetch(`${OPRS_BASE}/jgreq.do?hiddenaction=searchserviceforhome`, {
+  const res = await fetch(`${OPRS_BASE}/OPRSOnline/jqreq.do?hiddenAction=SearchServiceForHome`, {
     method:  "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body:    body.toString(),
   });
   if (!res.ok) throw new Error(`OPRS search: ${res.status}`);
-  return res.json() as Promise<OprsTripResult[]>;
+  const data = await res.json() as { trips?: OprsTripResult[]; _meta?: unknown } | OprsTripResult[];
+  // Worker returns { trips: [...], _meta: {...} } — unwrap
+  return Array.isArray(data) ? data : (data.trips ?? []);
 }
 
 // ── VTS share-link decode ─────────────────────────────────────────────────────

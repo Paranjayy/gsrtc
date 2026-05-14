@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   ArrowDownUp, ArrowRight, ArrowLeftRight, Calendar, Check, ChevronDown,
-  Filter, LayoutList, MapPin, RowsIcon, Sparkles, Ticket, Users, Clock, X, ExternalLink, History,
+  Filter, LayoutList, MapPin, RowsIcon, Sparkles, Ticket, Users, Clock, X, ExternalLink, History, Loader2,
 } from "lucide-react";
 import { generateTrips, popularRoutes, SERVICE_META, GSRTC_STATIONS, type ServiceClass, type Trip } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { hasProxy } from "@/lib/vts-api";
+import { hasProxy, fetchOprsSchedule, type OprsTripResult } from "@/lib/vts-api";
 
 // Build official GSRTC booking deep-link
 function officialBookingUrl(from: string, to: string, date: string, serviceCode?: string): string {
@@ -20,6 +20,46 @@ function officialBookingUrl(from: string, to: string, date: string, serviceCode?
   return `${base}?${params.toString()}`;
 }
 
+/** Map a scraped OPRS result to our Trip shape */
+function oprsToTrip(r: OprsTripResult, from: string, to: string): Trip {
+  const code = r.serviceCode ?? "";
+  // Service code format: "1800BHJDIUVLV47" — first 4 chars = HHMM departure time
+  const rawHour = code.length >= 4 ? parseInt(code.slice(0, 2)) : 0;
+  const rawMin  = code.length >= 4 ? parseInt(code.slice(2, 4)) : 0;
+  const deptH   = isNaN(rawHour) ? 0 : rawHour;
+  const deptM   = isNaN(rawMin)  ? 0 : rawMin;
+  const departTime = r.departTime ?? `${String(deptH).padStart(2,"0")}:${String(deptM).padStart(2,"0")}`;
+
+  // Guess service class from service code suffix / fare
+  const fare = r.fare ?? 150;
+  const svcClass: ServiceClass =
+    fare > 250 ? "Volvo" :
+    fare > 180 ? "AC Luxury" :
+    fare > 150 ? "Sleeper" :
+    fare > 130 ? "Luxury" :
+    fare > 100 ? "Express" :
+    fare > 80  ? "Gurjarnagri" : "Local Ordinary";
+
+  const durationMin = 120; // fallback; OPRS doesn't expose duration directly
+  const arrH = (deptH + Math.floor((deptM + durationMin) / 60)) % 24;
+  const arrM = (deptM + durationMin) % 60;
+  const arriveTime = `${String(arrH).padStart(2,"0")}:${String(arrM).padStart(2,"0")}`;
+
+  return {
+    id:           code || Math.random().toString(36).slice(2),
+    serviceCode:  code,
+    serviceClass: svcClass,
+    origin:       from,
+    destination:  to,
+    departTime,
+    arriveTime,
+    durationMin,
+    fare,
+    seatsLeft:    r.seatsLeft ?? 0,
+    via:          [],
+  };
+}
+
 const HISTORY_KEY = "gsrtc_search_history";
 type HistoryEntry = { from: string; to: string; date: string; ts: number };
 
@@ -30,6 +70,7 @@ function saveHistory(e: HistoryEntry) {
   const prev = loadHistory().filter(h => !(h.from === e.from && h.to === e.to));
   localStorage.setItem(HISTORY_KEY, JSON.stringify([e, ...prev].slice(0, 8)));
 }
+
 
 export const Route = createFileRoute("/book/")({
   head: () => ({
@@ -215,11 +256,39 @@ function BookIndex() {
   const [afterHour, setAfter] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  const rawTrips = useMemo(
-    () => (searched ? generateTrips(from || "Ahmedabad", to || "Rajkot") : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [searched, from, to]
-  );
+  const [isLoading, setLoading] = useState(false);
+  const [isLive, setIsLive]     = useState(false);
+  const [rawTrips, setRawTrips] = useState<Trip[]>([]);
+
+  const runSearch = useCallback(async (f: string, t: string, d: string) => {
+    setLoading(true);
+    setRawTrips([]);
+    try {
+      const results = await fetchOprsSchedule({
+        source:      f,
+        destination: t,
+        date:        d.split("-").reverse().join("/"), // YYYY-MM-DD → DD/MM/YYYY
+      });
+      if (results.length > 0) {
+        setRawTrips(results.map(r => oprsToTrip(r, f, t)));
+        setIsLive(true);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // proxy error — fall through to mock
+    }
+    // fallback: mock data
+    setRawTrips(generateTrips(f || "Ahmedabad", t || "Rajkot"));
+    setIsLive(false);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (searched && from && to) void runSearch(from, to, date);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searched]);
+
 
   const filtered = useMemo(() => {
     let t = rawTrips
@@ -326,8 +395,24 @@ function BookIndex() {
 
       {searched && (
         <div className="mt-8">
+          {/* Loading state */}
+          {isLoading && (
+            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span>Fetching live schedules from GSRTC…</span>
+            </div>
+          )}
+
+          {/* Live data badge */}
+          {!isLoading && isLive && (
+            <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+              <span className="text-base">🟢</span>
+              <span><strong>Live GSRTC data</strong> — real-time availability from gsrtc.in</span>
+            </div>
+          )}
+
           {/* Mock data banner */}
-          {!hasProxy && (
+          {!isLoading && !isLive && (
             <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent-foreground">
               <span className="text-base">⚠️</span>
               <span>
