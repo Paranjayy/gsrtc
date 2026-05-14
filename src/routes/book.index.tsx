@@ -1,11 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
-  ArrowDownUp, ArrowRight, Calendar, Check, ChevronDown,
-  Filter, LayoutList, MapPin, RowsIcon, Sparkles, Ticket, Users, Clock, X,
+  ArrowDownUp, ArrowRight, ArrowLeftRight, Calendar, Check, ChevronDown,
+  Filter, LayoutList, MapPin, RowsIcon, Sparkles, Ticket, Users, Clock, X, ExternalLink, History,
 } from "lucide-react";
 import { generateTrips, popularRoutes, SERVICE_META, GSRTC_STATIONS, type ServiceClass, type Trip } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { hasProxy } from "@/lib/vts-api";
+
+// Build official GSRTC booking deep-link
+function officialBookingUrl(from: string, to: string, date: string, serviceCode?: string): string {
+  const base = "https://gsrtc.in/site/en/web/booking/new-booking";
+  const params = new URLSearchParams({
+    src: from,
+    dst: to,
+    doj: date.split("-").reverse().join("/"), // DD/MM/YYYY
+    ...(serviceCode ? { sc: serviceCode } : {}),
+  });
+  return `${base}?${params.toString()}`;
+}
+
+const HISTORY_KEY = "gsrtc_search_history";
+type HistoryEntry = { from: string; to: string; date: string; ts: number };
+
+function loadHistory(): HistoryEntry[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); } catch { return []; }
+}
+function saveHistory(e: HistoryEntry) {
+  const prev = loadHistory().filter(h => !(h.from === e.from && h.to === e.to));
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([e, ...prev].slice(0, 8)));
+}
 
 export const Route = createFileRoute("/book/")({
   head: () => ({
@@ -85,10 +109,11 @@ function SeatsBar({ seats }: { seats: number }) {
   );
 }
 
-function TripCard({ trip, compact }: { trip: Trip; compact: boolean }) {
+function TripCard({ trip, from, to, date, compact }: { trip: Trip; from: string; to: string; date: string; compact: boolean }) {
   const meta = SERVICE_META[trip.serviceClass];
   const hrs = Math.floor(trip.durationMin / 60);
   const mins = trip.durationMin % 60;
+  const bookUrl = officialBookingUrl(from, to, date, trip.serviceCode);
 
   if (compact) {
     return (
@@ -108,9 +133,14 @@ function TripCard({ trip, compact }: { trip: Trip; compact: boolean }) {
         <span className="text-sm text-muted-foreground">{hrs}h {mins}m</span>
         <SeatsBar seats={trip.seatsLeft} />
         <span className="text-sm font-semibold">₹{trip.fare}</span>
-        <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+        <a
+          href={bookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+        >
           <Ticket className="h-3.5 w-3.5" /> Book
-        </button>
+        </a>
       </div>
     );
   }
@@ -143,9 +173,14 @@ function TripCard({ trip, compact }: { trip: Trip; compact: boolean }) {
         <div className="text-[11px] text-muted-foreground">incl. taxes</div>
         <div className="mt-1"><SeatsBar seats={trip.seatsLeft} /></div>
       </div>
-      <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02]">
-        <Ticket className="h-4 w-4" /> Select seats
-      </button>
+      <a
+        href={bookUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02] hover:opacity-90"
+      >
+        <ExternalLink className="h-4 w-4" /> Book on GSRTC
+      </a>
     </div>
   );
 }
@@ -155,6 +190,19 @@ function BookIndex() {
   const [to, setTo]           = useState("");
   const [date, setDate]       = useState(new Date().toISOString().slice(0, 10));
   const [searched, setSearch] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  useEffect(() => { setHistory(loadHistory()); }, []);
+
+  const doSearch = () => {
+    if (!from || !to) return;
+    const entry = { from, to, date, ts: Date.now() };
+    saveHistory(entry);
+    setHistory(loadHistory());
+    setSearch(true);
+  };
+
+  const swapStations = () => { setFrom(to); setTo(from); };
 
   // Filter / sort / group state
   const [enabledClasses, setClasses] = useState<Set<ServiceClass>>(new Set(ALL_CLASSES));
@@ -169,6 +217,7 @@ function BookIndex() {
 
   const rawTrips = useMemo(
     () => (searched ? generateTrips(from || "Ahmedabad", to || "Rajkot") : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [searched, from, to]
   );
 
@@ -234,12 +283,17 @@ function BookIndex() {
         <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Find your ride</h1>
         <p className="mt-2 text-primary-foreground/75">Compare timings, fares &amp; availability across all GSRTC service classes.</p>
 
+        {/* Search form */}
         <form
-          onSubmit={(e) => { e.preventDefault(); setSearch(true); }}
-          className="mt-6 grid gap-2 rounded-2xl bg-surface p-2 text-foreground shadow-elegant md:grid-cols-[1fr_1fr_180px_auto]"
+          onSubmit={(e) => { e.preventDefault(); doSearch(); }}
+          className="mt-6 grid gap-2 rounded-2xl bg-surface p-2 text-foreground shadow-elegant md:grid-cols-[1fr_auto_1fr_180px_auto]"
         >
-          <StationCombo id="from" placeholder="From — e.g. Ahmedabad" value={from} onChange={setFrom} />
-          <StationCombo id="to"   placeholder="To — e.g. Rajkot"     value={to}   onChange={setTo}   />
+          <StationCombo id="from" placeholder="From — e.g. Ahmedabad" value={from} onChange={v => { setFrom(v); setSearch(false); }} />
+          <button type="button" onClick={swapStations} title="Swap stations"
+            className="flex items-center justify-center rounded-xl p-2 hover:bg-secondary/50 transition-colors">
+            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <StationCombo id="to"   placeholder="To — e.g. Rajkot"     value={to}   onChange={v => { setTo(v); setSearch(false); }} />
           <div className="flex items-center gap-2 rounded-xl px-3 hover:bg-secondary/50">
             <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
@@ -249,11 +303,49 @@ function BookIndex() {
             Search <ArrowRight className="h-4 w-4" />
           </button>
         </form>
+
+        {/* Recent searches */}
+        {!searched && history.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-xs text-primary-foreground/60">
+              <History className="h-3 w-3" /> Recent:
+            </span>
+            {history.slice(0, 5).map(h => (
+              <button
+                key={h.ts}
+                type="button"
+                onClick={() => { setFrom(h.from); setTo(h.to); setDate(h.date); doSearch(); }}
+                className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs hover:bg-white/20 transition-colors"
+              >
+                {h.from} → {h.to}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {searched && (
         <div className="mt-8">
+          {/* Mock data banner */}
+          {!hasProxy && (
+            <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent-foreground">
+              <span className="text-base">⚠️</span>
+              <span>
+                <strong>Estimated schedules</strong> — timings, fares and seat counts are sample data, not live GSRTC availability.{" "}
+                <a
+                  href={officialBookingUrl(from, to, date)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:opacity-80"
+                >
+                  Book on official site →
+                </a>
+              </span>
+            </div>
+          )}
+
           {/* Toolbar */}
+
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold tracking-tight">
@@ -425,11 +517,11 @@ function BookIndex() {
                   )}
                   {viewMode === "compact" ? (
                     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                      {group.trips.map(t => <TripCard key={t.id} trip={t} compact />)}
+                      {group.trips.map(t => <TripCard key={t.id} trip={t} from={from} to={to} date={date} compact />)}
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {group.trips.map(t => <TripCard key={t.id} trip={t} compact={false} />)}
+                      {group.trips.map(t => <TripCard key={t.id} trip={t} from={from} to={to} date={date} compact={false} />)}
                     </div>
                   )}
                 </div>
