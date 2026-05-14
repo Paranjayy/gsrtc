@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowRight, Calendar, Clock, MapPin, Sparkles, Ticket, Users } from "lucide-react";
-import { mockTrips, popularRoutes } from "@/lib/mock-data";
+import { useMemo, useState } from "react";
+import {
+  ArrowDownUp, ArrowRight, Calendar, Check, ChevronDown,
+  Filter, LayoutList, MapPin, RowsIcon, Sparkles, Ticket, Users, Clock, X,
+} from "lucide-react";
+import { generateTrips, popularRoutes, SERVICE_META, GSRTC_STATIONS, type ServiceClass, type Trip } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/book/")({
   head: () => ({
@@ -13,79 +17,437 @@ export const Route = createFileRoute("/book/")({
   component: BookIndex,
 });
 
+type SortBy = "time" | "fare" | "duration" | "seats";
+type GroupBy = "service" | "time-of-day" | "none";
+type ViewMode = "list" | "compact";
+
+const ALL_CLASSES = Object.keys(SERVICE_META) as ServiceClass[];
+
+const TIME_BANDS = [
+  { label: "Early morning", from: 0,  to: 6  },
+  { label: "Morning",       from: 6,  to: 12 },
+  { label: "Afternoon",     from: 12, to: 17 },
+  { label: "Evening",       from: 17, to: 21 },
+  { label: "Night",         from: 21, to: 24 },
+];
+
+function tripHour(t: Trip) { return parseInt(t.departTime.split(":")[0]); }
+
+function StationCombo({ id, value, onChange, placeholder }: { id: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  const suggestions = useMemo(() =>
+    GSRTC_STATIONS.filter(s => s.toLowerCase().includes(value.toLowerCase())).slice(0, 8),
+    [value]
+  );
+  return (
+    <div className="relative flex flex-1 items-center gap-2 rounded-xl px-3 hover:bg-secondary/50">
+      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className="w-full bg-transparent py-3 text-sm focus:outline-none"
+      />
+      {open && value && suggestions.length > 0 && (
+        <ul className="absolute left-0 top-full z-50 mt-1 w-full rounded-xl border border-border bg-card shadow-elegant">
+          {suggestions.map(s => (
+            <li
+              key={s}
+              onMouseDown={() => { onChange(s); setOpen(false); }}
+              className="cursor-pointer px-4 py-2.5 text-sm hover:bg-secondary"
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SeatsBar({ seats }: { seats: number }) {
+  const pct = Math.min(100, (seats / 45) * 100);
+  const color = seats > 15 ? "bg-success" : seats > 5 ? "bg-accent" : "bg-destructive";
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-border">
+        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={cn("text-xs font-medium tabular-nums",
+        seats > 15 ? "text-success" : seats > 5 ? "text-accent" : "text-destructive"
+      )}>{seats}</span>
+    </div>
+  );
+}
+
+function TripCard({ trip, compact }: { trip: Trip; compact: boolean }) {
+  const meta = SERVICE_META[trip.serviceClass];
+  const hrs = Math.floor(trip.durationMin / 60);
+  const mins = trip.durationMin % 60;
+
+  if (compact) {
+    return (
+      <div className="grid items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-secondary/40 md:grid-cols-[90px_1fr_80px_80px_80px_auto]">
+        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+          style={{ color: meta.color, background: meta.bgColor }}>
+          {trip.serviceClass}
+        </span>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-semibold tabular-nums">{trip.departTime}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className="font-semibold tabular-nums">{trip.arriveTime}</span>
+          {trip.via.length > 0 && (
+            <span className="hidden text-xs text-muted-foreground md:block">via {trip.via.join(", ")}</span>
+          )}
+        </div>
+        <span className="text-sm text-muted-foreground">{hrs}h {mins}m</span>
+        <SeatsBar seats={trip.seatsLeft} />
+        <span className="text-sm font-semibold">₹{trip.fare}</span>
+        <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+          <Ticket className="h-3.5 w-3.5" /> Book
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-elegant md:grid-cols-[1fr_auto_auto]">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider"
+            style={{ color: meta.color, background: meta.bgColor }}>
+            {trip.serviceClass}
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">{trip.serviceCode}</span>
+        </div>
+        <div className="mt-2 flex items-baseline gap-3">
+          <span className="text-2xl font-semibold tabular-nums tracking-tight">{trip.departTime}</span>
+          <span className="text-xs text-muted-foreground">{trip.origin}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className="text-2xl font-semibold tabular-nums tracking-tight">{trip.arriveTime}</span>
+          <span className="text-xs text-muted-foreground">{trip.destination}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{hrs}h {mins}m</span>
+          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{trip.seatsLeft} seats</span>
+          {trip.via.length > 0 && <span>via {trip.via.join(", ")}</span>}
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="text-2xl font-semibold tracking-tight">₹{trip.fare}</div>
+        <div className="text-[11px] text-muted-foreground">incl. taxes</div>
+        <div className="mt-1"><SeatsBar seats={trip.seatsLeft} /></div>
+      </div>
+      <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02]">
+        <Ticket className="h-4 w-4" /> Select seats
+      </button>
+    </div>
+  );
+}
+
 function BookIndex() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [searched, setSearched] = useState(false);
+  const [from, setFrom]       = useState("");
+  const [to, setTo]           = useState("");
+  const [date, setDate]       = useState(new Date().toISOString().slice(0, 10));
+  const [searched, setSearch] = useState(false);
+
+  // Filter / sort / group state
+  const [enabledClasses, setClasses] = useState<Set<ServiceClass>>(new Set(ALL_CLASSES));
+  const [sortBy, setSortBy]   = useState<SortBy>("time");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [groupBy, setGroupBy] = useState<GroupBy>("service");
+  const [viewMode, setView]   = useState<ViewMode>("list");
+  const [maxFare, setMaxFare] = useState(300);
+  const [minSeats, setSeats]  = useState(0);
+  const [afterHour, setAfter] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const rawTrips = useMemo(
+    () => (searched ? generateTrips(from || "Ahmedabad", to || "Rajkot") : []),
+    [searched, from, to]
+  );
+
+  const filtered = useMemo(() => {
+    let t = rawTrips
+      .filter(x => enabledClasses.has(x.serviceClass))
+      .filter(x => x.fare <= maxFare)
+      .filter(x => x.seatsLeft >= minSeats)
+      .filter(x => tripHour(x) >= afterHour);
+
+    t.sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortBy === "time")     return a.departTime.localeCompare(b.departTime) * dir;
+      if (sortBy === "fare")     return (a.fare - b.fare) * dir;
+      if (sortBy === "duration") return (a.durationMin - b.durationMin) * dir;
+      if (sortBy === "seats")    return (a.seatsLeft - b.seatsLeft) * dir;
+      return 0;
+    });
+
+    return t;
+  }, [rawTrips, enabledClasses, maxFare, minSeats, afterHour, sortBy, sortDir]);
+
+  // Grouped results
+  const grouped = useMemo(() => {
+    if (groupBy === "none") return [{ label: "All buses", trips: filtered }];
+    if (groupBy === "service") {
+      const map = new Map<ServiceClass, Trip[]>();
+      filtered.forEach(t => {
+        const arr = map.get(t.serviceClass) ?? [];
+        arr.push(t);
+        map.set(t.serviceClass, arr);
+      });
+      return [...map.entries()].map(([label, trips]) => ({ label, trips }));
+    }
+    if (groupBy === "time-of-day") {
+      return TIME_BANDS
+        .map(band => ({
+          label: band.label,
+          trips: filtered.filter(t => { const h = tripHour(t); return h >= band.from && h < band.to; }),
+        }))
+        .filter(g => g.trips.length > 0);
+    }
+    return [];
+  }, [filtered, groupBy]);
+
+  const toggleClass = (cls: ServiceClass) => {
+    setClasses(prev => {
+      const next = new Set(prev);
+      next.has(cls) ? next.delete(cls) : next.add(cls);
+      return next;
+    });
+  };
+
+  const activeFilterCount = (ALL_CLASSES.length - enabledClasses.size) + (maxFare < 300 ? 1 : 0) + (minSeats > 0 ? 1 : 0) + (afterHour > 0 ? 1 : 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      {/* Search hero */}
       <div className="rounded-3xl bg-gradient-hero p-6 text-primary-foreground sm:p-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs">
-          <Sparkles className="h-3.5 w-3.5 text-accent" /> GSRTC · RedBus · AbhiBus — one search
+          <Sparkles className="h-3.5 w-3.5 text-accent" /> GSRTC schedule &amp; pricing — all service classes
         </div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Book your next ride</h1>
-        <p className="mt-2 text-primary-foreground/75">No login walls. No surprise fees. Compare and book in seconds.</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Find your ride</h1>
+        <p className="mt-2 text-primary-foreground/75">Compare timings, fares &amp; availability across all GSRTC service classes.</p>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); setSearched(true); }}
+          onSubmit={(e) => { e.preventDefault(); setSearch(true); }}
           className="mt-6 grid gap-2 rounded-2xl bg-surface p-2 text-foreground shadow-elegant md:grid-cols-[1fr_1fr_180px_auto]"
         >
-          <Field icon={<MapPin className="h-4 w-4 text-muted-foreground" />} placeholder="From — e.g. Ahmedabad" value={from} onChange={setFrom} />
-          <Field icon={<MapPin className="h-4 w-4 text-muted-foreground" />} placeholder="To — e.g. Rajkot" value={to} onChange={setTo} />
-          <Field icon={<Calendar className="h-4 w-4 text-muted-foreground" />} type="date" value={date} onChange={setDate} />
+          <StationCombo id="from" placeholder="From — e.g. Ahmedabad" value={from} onChange={setFrom} />
+          <StationCombo id="to"   placeholder="To — e.g. Rajkot"     value={to}   onChange={setTo}   />
+          <div className="flex items-center gap-2 rounded-xl px-3 hover:bg-secondary/50">
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              className="w-full bg-transparent py-3 text-sm focus:outline-none" />
+          </div>
           <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground">
             Search <ArrowRight className="h-4 w-4" />
           </button>
         </form>
       </div>
 
-      {searched ? (
+      {searched && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold tracking-tight">{mockTrips.length} buses found</h2>
-          <p className="text-sm text-muted-foreground">{from || "Ahmedabad"} → {to || "Rajkot"} · {new Date(date).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}</p>
+          {/* Toolbar */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {filtered.length} buses found
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {from || "Ahmedabad"} → {to || "Rajkot"} · {new Date(date + "T00:00:00").toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
+              </p>
+            </div>
 
-          <div className="mt-4 space-y-3">
-            {mockTrips.map((t) => (
-              <div key={t.id} className="grid items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-elegant md:grid-cols-[1fr_auto_auto]">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-secondary-foreground">{t.type}</span>
-                    <span className="text-xs text-muted-foreground">{t.serviceCode}</span>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-3">
-                    <div className="text-2xl font-semibold tabular-nums tracking-tight">{t.departTime}</div>
-                    <div className="text-xs text-muted-foreground">{t.origin}</div>
-                    <div className="text-muted-foreground">→</div>
-                    <div className="text-2xl font-semibold tabular-nums tracking-tight">{t.arriveTime}</div>
-                    <div className="text-xs text-muted-foreground">{t.destination}</div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{Math.floor(t.durationMin/60)}h {t.durationMin%60}m</span>
-                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{t.seatsLeft} seats left</span>
-                    <span>Via {t.via.join(", ")}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-semibold tracking-tight">₹{t.fare}</div>
-                  <div className="text-[11px] text-muted-foreground">incl. taxes</div>
-                </div>
-                <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-                  <Ticket className="h-4 w-4" /> Select seats
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Filter toggle */}
+              <button
+                onClick={() => setShowFilters(v => !v)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors",
+                  showFilters || activeFilterCount > 0
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card hover:bg-secondary"
+                )}
+              >
+                <Filter className="h-4 w-4" />
+                Filter {activeFilterCount > 0 && <span className="rounded-full bg-white/20 px-1.5 text-xs">{activeFilterCount}</span>}
+              </button>
+
+              {/* Group by */}
+              <div className="relative">
+                <select
+                  value={groupBy}
+                  onChange={e => setGroupBy(e.target.value as GroupBy)}
+                  className="appearance-none rounded-full border border-border bg-card py-2 pl-3 pr-8 text-sm font-medium focus:outline-none"
+                >
+                  <option value="service">Group: Service</option>
+                  <option value="time-of-day">Group: Time</option>
+                  <option value="none">No grouping</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+
+              {/* Sort */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value as SortBy)}
+                  className="appearance-none rounded-full border border-border bg-card py-2 pl-3 pr-8 text-sm font-medium focus:outline-none"
+                >
+                  <option value="time">Sort: Departure</option>
+                  <option value="fare">Sort: Price</option>
+                  <option value="duration">Sort: Duration</option>
+                  <option value="seats">Sort: Seats</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+
+              <button
+                onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
+                className="rounded-full border border-border bg-card p-2 transition-colors hover:bg-secondary"
+                title="Toggle sort direction"
+              >
+                <ArrowDownUp className={cn("h-4 w-4 transition-transform", sortDir === "desc" && "rotate-180")} />
+              </button>
+
+              {/* View mode */}
+              <div className="flex rounded-full border border-border bg-card p-1">
+                <button onClick={() => setView("list")} className={cn("rounded-full p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "hover:bg-secondary")}>
+                  <LayoutList className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setView("compact")} className={cn("rounded-full p-1.5 transition-colors", viewMode === "compact" ? "bg-primary text-primary-foreground" : "hover:bg-secondary")}>
+                  <RowsIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
-            ))}
+            </div>
           </div>
+
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Service class chips */}
+                <div className="sm:col-span-2 lg:col-span-4">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service class</div>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_CLASSES.map(cls => {
+                      const meta = SERVICE_META[cls];
+                      const active = enabledClasses.has(cls);
+                      return (
+                        <button
+                          key={cls}
+                          onClick={() => toggleClass(cls)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all",
+                            active ? "border-transparent" : "border-border bg-card opacity-50"
+                          )}
+                          style={active ? { color: meta.color, background: meta.bgColor, borderColor: meta.color + "55" } : {}}
+                        >
+                          {active && <Check className="h-3 w-3" />}
+                          {cls}
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => setClasses(new Set(ALL_CLASSES))} className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground hover:bg-secondary">
+                      <X className="h-3 w-3" /> Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* Max fare */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>Max fare</span><span className="font-mono text-foreground">₹{maxFare}</span>
+                  </div>
+                  <input type="range" min={50} max={300} step={5} value={maxFare} onChange={e => setMaxFare(+e.target.value)}
+                    className="w-full accent-primary" />
+                </div>
+
+                {/* Min seats */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>Min seats</span><span className="font-mono text-foreground">{minSeats}</span>
+                  </div>
+                  <input type="range" min={0} max={30} step={1} value={minSeats} onChange={e => setSeats(+e.target.value)}
+                    className="w-full accent-primary" />
+                </div>
+
+                {/* Depart after */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>Depart after</span>
+                    <span className="font-mono text-foreground">{String(afterHour).padStart(2,"0")}:00</span>
+                  </div>
+                  <input type="range" min={0} max={23} step={1} value={afterHour} onChange={e => setAfter(+e.target.value)}
+                    className="w-full accent-primary" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Service class summary strip */}
+          <div className="mb-5 flex flex-wrap gap-2">
+            {ALL_CLASSES.map(cls => {
+              const count = filtered.filter(t => t.serviceClass === cls).length;
+              if (!count) return null;
+              const meta = SERVICE_META[cls];
+              return (
+                <button key={cls} onClick={() => { setGroupBy("service"); setSortBy("time"); }}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium"
+                  style={{ color: meta.color, background: meta.bgColor, borderColor: meta.color + "44" }}>
+                  {cls}: {count}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Results */}
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground">
+              No buses match your filters. Try relaxing some constraints.
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {grouped.map(group => (
+                <div key={group.label}>
+                  {groupBy !== "none" && (
+                    <div className="mb-3 flex items-center gap-3">
+                      <h3 className="text-sm font-semibold tracking-tight">{group.label}</h3>
+                      <span className="text-xs text-muted-foreground">{group.trips.length} bus{group.trips.length !== 1 ? "es" : ""}</span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                  )}
+                  {viewMode === "compact" ? (
+                    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                      {group.trips.map(t => <TripCard key={t.id} trip={t} compact />)}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {group.trips.map(t => <TripCard key={t.id} trip={t} compact={false} />)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
+      )}
+
+      {/* Popular routes (pre-search) */}
+      {!searched && (
         <div className="mt-10">
           <h2 className="mb-4 text-lg font-semibold tracking-tight">Popular routes</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {popularRoutes.map((r) => (
+            {popularRoutes.map(r => (
               <button
                 key={r.id}
-                onClick={() => { setFrom(r.from); setTo(r.to); setSearched(true); }}
+                onClick={() => { setFrom(r.from); setTo(r.to); setSearch(true); }}
                 className="group rounded-2xl border border-border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-elegant"
               >
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">{r.trips} trips · from ₹{r.fareFrom}</div>
@@ -96,21 +458,6 @@ function BookIndex() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Field({ icon, placeholder, value, onChange, type = "text" }: { icon: React.ReactNode; placeholder?: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl px-3 hover:bg-secondary/50">
-      {icon}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-transparent py-3 text-sm focus:outline-none"
-      />
     </div>
   );
 }
