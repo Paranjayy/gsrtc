@@ -30,14 +30,19 @@ function usePolledBus(id: string, intervalMs = 30_000) {
         ...prev,
         lat:      vts.lat      ?? prev.lat,
         lng:      vts.lng      ?? prev.lng,
-        speedKmh: vts.speedKmh ?? prev.speedKmh,
-        direction:(vts.direction ?? prev.direction) as BusInfo["direction"],
-        service:  (vts.service   ?? prev.service)   as BusInfo["service"],
-        depot:    vts.depot      ?? prev.depot,
-        status:   (vts.status === "OnTrip" ? "On time" : (vts.status ?? prev.status)) as BusInfo["status"],
-        updatedAt: vts.updatedAt ?? new Date().toISOString(),
+        speedKmh: (vts as {speedKmh?: number}).speedKmh ?? prev.speedKmh,
+        direction:((vts as {direction?: string}).direction ?? prev.direction) as BusInfo["direction"],
+        service:  ((vts as {service?: string}).service   ?? prev.service)   as BusInfo["service"],
+        depot:    (vts as {depot?: string}).depot      ?? prev.depot,
+        // Map real API status values
+        status:   vts.status === "OnTrip"  ? "On time"
+                : vts.status === "Arrived" ? "Arrived"
+                : vts.status && vts.status !== "N/A" ? vts.status as BusInfo["status"]
+                : prev.status,
+        // Map real API stop fields
+        updatedAt: new Date().toISOString(),
       }));
-      setIsLive(true);
+      setIsLive(!!(vts.isLive));
     } catch {
       setBus(prev => ({
         ...prev,
