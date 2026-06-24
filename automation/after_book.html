@@ -1,0 +1,2417 @@
+<!DOCTYPE html><html><head>
+  <title>GSRTC</title>
+<!-- Start Multi tab Restricting -->
+<script type="text/javascript">
+let localStorageTimeout = 15 * 1000; // 15,000 milliseconds = 15 seconds.
+let localStorageResetInterval = 10 * 1000; // 10,000 milliseconds = 10 seconds.
+let localStorageTabKey = 'test-application-browser-tab';
+let sessionStorageGuidKey = 'browser-tab-guid';
+function createGUID() {
+  let guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    /*eslint-disable*/
+    let r = Math.random() * 16 | 0,
+      v = c == 'x' ? r : (r & 0x3 | 0x8);
+    /*eslint-enable*/
+    return v.toString(16);
+  });
+
+  return guid;
+}
+function testTab() {
+  let sessionGuid = sessionStorage.getItem(sessionStorageGuidKey) || createGUID();
+  let tabObj = JSON.parse(localStorage.getItem(localStorageTabKey)) || null;
+sessionStorage.setItem(sessionStorageGuidKey, sessionGuid);
+
+  // If no or stale tab object, our session is the winner.  If the guid matches, ours is still the winner
+  if (tabObj === null || (tabObj.timestamp < new Date().getTime() - localStorageTimeout) || tabObj.guid === sessionGuid) {
+    function setTabObj() {
+      let newTabObj = {
+        guid: sessionGuid,
+        timestamp: new Date().getTime()
+      };
+      localStorage.setItem(localStorageTabKey, JSON.stringify(newTabObj));
+    }
+    setTabObj();
+    setInterval(setTabObj, localStorageResetInterval);
+    return true;
+  } else {
+    // An active tab is already open that does not match our session guid.
+    return false;
+  }
+}
+if (testTab()) {
+  //document.getElementById('result').innerHTML = 'tab is good';
+//alert("GOOD TAB");  
+} else {
+  //document.getElementById('result').innerHTML = 'tab is bad';
+alert("Sorry application was aready opened in another tab !! Due to security reason we are not allowing mutilple tab Booking.");
+window.location = 'https://www.google.com';
+}
+</script>
+<!-- End Multi tab Restricting -->  
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="prePone/css/bootstrap.min.css">
+  <script src="prePone/js/jquery.min.js"></script>
+  
+
+
+
+
+
+
+<style>990000
+.navbar-inverse {
+     background-color: #ccc; 
+     border-color: #fff;
+}
+.navbar {
+       margin-bottom: 0;
+      border-radius: 0; height: 80px; background-color: #7688e8;
+    }
+	
+	.top-buffer { padding: 15px;  }
+	.top-bufferRt { padding: 15px;  }
+	
+.pageHeader { font-size: 12px; font-weight: bold ; color:#ff6633	}
+@media screen and (max-width: 320px) {
+  #enjoyM { display:  none;   
+  }
+}                              
+@media screen and (max-width: 768px) {
+  #enjoyM { display:  none;   
+  }
+} 
+footer {
+      background-color: #999999;
+      color: white;
+      padding: 15px;
+    }
+/*  bhoechie tab */
+div.bhoechie-tab-container{
+  z-index: 10;
+  background-color: #ffffff;
+  padding: 0 !important;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  border:1px solid #ddd;
+  margin-top: 10px;
+  
+  -webkit-box-shadow: 0 6px 12px rgba(0,0,0,.175);
+  box-shadow: 0 6px 12px rgba(0,0,0,.175);
+  -moz-box-shadow: 0 6px 12px rgba(0,0,0,.175);
+  background-clip: padding-box;
+  opacity: 0.97;
+  filter: alpha(opacity=97);
+}
+div.bhoechie-tab-menu{
+  padding-right: 0;
+  padding-left: 0;
+  padding-bottom: 0;
+}
+div.bhoechie-tab-menu div.list-group{
+  margin-bottom: 0;
+}
+div.bhoechie-tab-menu div.list-group>a{
+  margin-bottom: 0;
+}
+div.bhoechie-tab-menu div.list-group>a .glyphicon,
+div.bhoechie-tab-menu div.list-group>a .fa {
+  color: #5A55A3;
+}
+div.bhoechie-tab-menu div.list-group>a:first-child{
+  border-top-right-radius: 0;
+  -moz-border-top-right-radius: 0;
+}
+div.bhoechie-tab-menu div.list-group>a:last-child{
+  border-bottom-right-radius: 0;
+  -moz-border-bottom-right-radius: 0;
+}
+div.bhoechie-tab-menu div.list-group>a.active,
+div.bhoechie-tab-menu div.list-group>a.active .glyphicon,
+div.bhoechie-tab-menu div.list-group>a.active .fa{
+  background-color: #5A55A3;
+  background-image: #5A55A3;
+  color: #ffffff;
+}
+div.bhoechie-tab-menu div.list-group>a.active:after{
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin-top: -13px;
+  border-left: 0;
+  border-bottom: 13px solid transparent;
+  border-top: 13px solid transparent;
+  border-left: 10px solid #5A55A3;
+}
+
+div.bhoechie-tab-content{
+  background-color: #ffffff;
+  /* border: 1px solid #eeeeee; */
+  padding-left: 10px;
+  padding-top: 10px;
+}
+.caption {
+    margin: 0;    
+    position: absolute; font-family:Arial, Helvetica, sans-serif; font-size:20px; color:#fff;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%)
+} 
+div.bhoechie-tab div.bhoechie-tab-content:not(.active){
+  display: none;
+}	
+</style>
+<script>
+let nsSelected = true;   // default SMS
+let wsSelected = false;
+function toggleSlider(element,type){
+    let container = element.parentElement;
+    let sliders = container.getElementsByClassName("slider-container");
+    for(let i=0;i<sliders.length;i++){
+        sliders[i].classList.remove("checked");
+    }
+    element.classList.add("checked");
+    if(type === 'NS'){
+        document.forms[0].nsSelectedBar.value = true;
+        document.forms[0].wsSelectedBar.value = false;
+    }
+    if(type === 'WS'){
+        document.forms[0].nsSelectedBar.value = false;
+        document.forms[0].wsSelectedBar.value = true;
+    }
+
+}
+</script>
+    <style>
+        .slider-container {
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 20px;
+            position: relative;
+            margin-right: 20px;
+            cursor: pointer;
+        }
+
+        .slider {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background-color: white;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+            transition: left 0.2s;
+        }
+
+        .slider-container.checked {
+            background-color: #4caf50;
+        }
+
+        .slider-container.checked .slider {
+            left: 21px;
+        }
+
+        .label-text {
+            margin-right: 20px;
+        }
+
+        .alert {
+            opacity: 0.5; /* Initially disable the divs (faded look) */
+            pointer-events: none; /* Disable interaction */
+        }
+
+        .alert.enabled {
+            opacity: 1; /* Enable the divs (normal look) */
+            pointer-events: auto; /* Enable interaction */
+        }
+    </style>
+
+
+<script type="text/javascript">
+function Submit(type) {
+	var card=type;
+	var invalidOtp=document.getElementById("validateMobileNo");
+	var isWalletSelected = document.getElementById("isWalletSelected");
+	var oneTimePasswordTmp = document.getElementById('txtOneTimePassword');
+	var oneTimePassword = oneTimePasswordTmp.value;
+	var normalSMS = document.forms[0].nsSelectedBar.value;
+	var WhatsSMS =document.forms[0].wsSelectedBar.value;
+	if (normalSMS=="true") {
+	    document.forms[0].VIASMS.value = "NS";//MTC
+	} else{
+		document.forms[0].VIASMS.value = "WS";//MTC
+	}
+	//alert("MODE :"+document.forms[0].VIASMS.value);
+	if(card=="Card"){
+		if (!validateConsentBeforePayment_CARD()) {
+	        return;
+	    }
+		var mode=document.forms[0].radUPIPaymentOption.value;
+		//var mode="PayGov";
+	     if(mode!=null && mode=="CCAVENUE"){
+	    	 if(confirm("Opted CCAVENUE Payment Option,Do you want to Proceed ? ")){
+	    		 if(isWalletSelected!=null){
+	    		    	 if(isWalletSelected.checked){
+	    		    		// alert("YES WALLET 111");
+	    		    		if(trim(oneTimePassword)==""){
+	    		    			alert("Please enter 'One Time Password'.");
+	    		    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+	    		    		}else if(!isNumberString(oneTimePassword)){
+	    		    				alert("Please enter a valid 'One Time Password'.");
+	    		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+	    		    		setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+	    		    			}else{
+	    		    				 document.forms[0].hiddenWalletCheckBox.value="YES";
+	    		   				     document.forms[0].walletBooking.value="YES";
+	    		   				    // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+	    		    				document.forms[0].radGatewayType.value = "C";
+	    		    				document.forms[0].selectCardPayment.value = "694";
+	    		    		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	    		    	            url = applicationURL+"hiddenAction=SaveDetails";
+	    		    	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	    		    			document.forms[0].submit();//--Nagu
+	    		        	    }
+	    					}else{
+	    		    			//alert("NO WALLET 2222");
+	    		    			 document.forms[0].hiddenWalletCheckBox.value="NO";
+	    		    			document.forms[0].walletBooking.value="NO"; 
+	    		            	document.forms[0].radGatewayType.value = "C";
+	    		            	document.forms[0].selectCardPayment.value = "694";
+	    		    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	    		                url = applicationURL+"hiddenAction=SaveDetails";
+	    		                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	    		               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+	    		                document.forms[0].submit();//--Nagu
+	    		    		}	
+	    				}else{
+	    			    // alert("NO WALLET 3333:::::  ");
+	    			     document.forms[0].hiddenWalletCheckBox.value="NO";
+	    				 document.forms[0].walletBooking.value="NO"; 
+	    				 document.forms[0].radGatewayType.value = "C";
+	    				 document.forms[0].selectCardPayment.value = "694";
+	    			 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	    		           url = applicationURL+"hiddenAction=SaveDetails";
+	    		            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	    		          //  alert("hiddenWalletCheckBox:3333333:"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+	    		            document.forms[0].submit();//--Nagu
+	    			     }
+	    	 }else{
+	 			return;
+	 		 }	 
+		 }else if(mode!=null && mode=="Paytm"){
+	    	 if(confirm("Opted ICICI Payment Option,Do you want to Proceed ? ")){
+	    		   document.forms[0].hiddenWalletCheckBox.value="NO";
+	    			document.forms[0].walletBooking.value="NO"; 
+	            	document.forms[0].radGatewayType.value = "IP";
+	            	document.forms[0].selectCardPayment.value = "733";//178-PAYTM && 733-ICICI
+	    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	                url = applicationURL+"hiddenAction=SaveDetails";
+	                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	                document.forms[0].submit();//--Nagu	 
+		}else{
+ 			return;
+		 }
+ 		}
+	 	//FEDERAL BANK
+		 else if(mode!=null && mode=="Federal"){
+	    	 if(confirm("Opted Federal Payment Option,Do you want to Proceed ? ")){
+	    		 
+	    		 if(isWalletSelected!=null){
+			    	 if(isWalletSelected.checked){
+			    		//alert("YES WALLET 111");
+			    		if(trim(oneTimePassword)==""){
+			    			alert("Please enter 'One Time Password'.");
+			    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+			    		}else if(!isNumberString(oneTimePassword)){
+			    				alert("Please enter a valid 'One Time Password'.");
+			    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+			    		setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+			    			}else{
+			    				 document.forms[0].hiddenWalletCheckBox.value="YES";
+			   				     document.forms[0].walletBooking.value="YES";
+			   				     //alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+			    				document.forms[0].radGatewayType.value = "FB";
+			    				document.forms[0].selectCardPayment.value = "759";
+			    		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+			    	            url = applicationURL+"hiddenAction=SaveDetails";
+			    	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+			    			document.forms[0].submit();//--Nagu
+			        	    }
+						}else{
+			    			//alert("NO WALLET 2222");
+			    			 document.forms[0].hiddenWalletCheckBox.value="NO";
+			    			document.forms[0].walletBooking.value="NO"; 
+			            	document.forms[0].radGatewayType.value = "FB";
+			            	document.forms[0].selectCardPayment.value = "759";
+			    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+			                url = applicationURL+"hiddenAction=SaveDetails";
+			                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+			               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+			                document.forms[0].submit();//--Nagu
+			    		}	
+					}else{
+				     //alert("NO WALLET 3333:::::  ");
+				        document.forms[0].hiddenWalletCheckBox.value="NO";
+		    			document.forms[0].walletBooking.value="NO"; 
+		            	document.forms[0].radGatewayType.value = "FB";
+		            	document.forms[0].selectCardPayment.value = "759";//
+		    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		                url = applicationURL+"hiddenAction=SaveDetails";
+		                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		                document.forms[0].submit();//--Nagu	
+				     }
+		}else{
+ 			return;
+		 }
+ 		}
+		 else if(mode!=null && mode=="PayGov"){
+			 if(confirm("Opted PayGov Payment Option,Do you want to Proceed ? ")){
+				//alert("CREDIT CARD");
+					/*if(document.forms[0].selectCardPayment.selectedIndex < 1){
+				    	 alert("'Please select credit card.");
+					     setTimeout('document.forms[0].selectCardPayment.focus()', 10 );
+				     }else{*/
+				 if(isWalletSelected!=null){
+				    	 if(isWalletSelected.checked){
+				    		// alert("YES WALLET 111");
+				    		if(trim(oneTimePassword)==""){
+				    			alert("Please enter 'One Time Password'.");
+				    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+				    		}else if(!isNumberString(oneTimePassword)){
+				    				alert("Please enter a valid 'One Time Password'.");
+				    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+				    		setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+				    			}else{
+				    				 document.forms[0].hiddenWalletCheckBox.value="YES";
+				   				     document.forms[0].walletBooking.value="YES";
+				   				    // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+				    				document.forms[0].radGatewayType.value = "PG";
+				    				document.forms[0].selectCardPayment.value = "724";
+				    		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+				    	            url = applicationURL+"hiddenAction=SaveDetails";
+				    	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+				    			document.forms[0].submit();//--Nagu
+				        	    }
+							}else{
+				    			//alert("NO WALLET 2222");
+				    			 document.forms[0].hiddenWalletCheckBox.value="NO";
+				    			document.forms[0].walletBooking.value="NO"; 
+				            	document.forms[0].radGatewayType.value = "PG";
+				            	document.forms[0].selectCardPayment.value = "724";
+				    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+				                url = applicationURL+"hiddenAction=SaveDetails";
+				                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+				               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+				                document.forms[0].submit();//--Nagu
+				    		}	
+						}else{
+					    // alert("NO WALLET 3333:::::  ");
+					     document.forms[0].hiddenWalletCheckBox.value="NO";
+						 document.forms[0].walletBooking.value="NO"; 
+						 document.forms[0].radGatewayType.value = "PG";
+						 document.forms[0].selectCardPayment.value = "724";
+					 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+				           url = applicationURL+"hiddenAction=SaveDetails";
+				            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+				          //  alert("hiddenWalletCheckBox:3333333:"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+				            document.forms[0].submit();//--Nagu
+					     }
+
+		    	 }else{
+	 			return;
+	 		 }
+			 
+		 }
+	 //}
+	}else if(card=="UPI"){
+		if (!validateConsentBeforePayment_UPI()) {
+			alert("UPI");
+			return;
+	    }
+		
+     var mode=document.forms[0].radUPIPaymentOption.value;
+     if(mode!=null && mode=="PhonePe"){
+         if(confirm("Opted Phonepe UPI Payment Option,Do you want to Proceed ? ")){
+		 document.forms[0].hiddenWalletCheckBox.value="NO";
+		 document.forms[0].walletBooking.value="NO"; 
+		 document.forms[0].radGatewayType.value = "U";
+		 document.forms[0].selectCardPayment.value = "722";
+		 //
+		 var walletCheck= document.forms[0].hiddenWalletCheckBox.value;
+		 var walletBooking= document.forms[0].walletBooking.value;
+		 var radGatewayType= document.forms[0].radGatewayType.value;
+		 var selectCardPayment= document.forms[0].selectCardPayment.value;
+		 //alert("fromPlace:"+fromPlace+":toPlace:"+toPlace+":routeCode:"+routeCode);
+     	 xhttp = new XMLHttpRequest();
+     	 xhttp.onreadystatechange = function() {
+     	 if (this.readyState == 4 && this.status == 200) {
+     	    var res = this.responseText;
+     	 	window.location.href=res;
+		}
+     	};
+     	xhttp.open("GET", "./advanceBooking.do?PhonepeSaveDetails=PhonepeSaveDetails&Values="+walletCheck+","+walletBooking+","+radGatewayType+","+selectCardPayment, true);
+     	xhttp.send();
+    	 }else{
+			 return;
+		    }	 
+	}else if(mode!=null && mode=="Paytm"){
+	    	 if(confirm("Opted ICICI UPI Payment Option,Do you want to Proceed ? ")){
+	    		   document.forms[0].hiddenWalletCheckBox.value="NO";
+	    			document.forms[0].walletBooking.value="NO"; 
+	            	document.forms[0].radGatewayType.value = "IP";
+	            	document.forms[0].selectCardPayment.value = "733";//178-PAYTM && 733-ICICI
+	    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	                url = applicationURL+"hiddenAction=SaveDetails";
+	                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	                document.forms[0].submit();//--Nagu	 
+		}else{
+ 			return;
+		 }
+   	}
+   //FEDERAL BANK
+	else if(mode!=null && mode=="Federal"){
+     	 if(confirm("Opted Federal Payment Option,Do you want to Proceed ? ")){
+      		if(isWalletSelected!=null){
+		    	 if(isWalletSelected.checked){
+		    		//alert("YES WALLET 111");
+		    		if(trim(oneTimePassword)==""){
+		    			alert("Please enter 'One Time Password'.");
+		    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    		}else if(!isNumberString(oneTimePassword)){
+		    				alert("Please enter a valid 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    		setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else{
+		    				 document.forms[0].hiddenWalletCheckBox.value="YES";
+		   				     document.forms[0].walletBooking.value="YES";
+		   				    // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+		    				document.forms[0].radGatewayType.value = "FB";
+		    				document.forms[0].selectCardPayment.value = "759";
+		    		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		    	            url = applicationURL+"hiddenAction=SaveDetails";
+		    	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		    			document.forms[0].submit();//--Nagu
+		        	    }
+					}else{
+		    			//alert("NO WALLET 2222");
+		    			 document.forms[0].hiddenWalletCheckBox.value="NO";
+		    			document.forms[0].walletBooking.value="NO"; 
+		            	document.forms[0].radGatewayType.value = "FB";
+		            	document.forms[0].selectCardPayment.value = "759";
+		    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		                url = applicationURL+"hiddenAction=SaveDetails";
+		                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+		                document.forms[0].submit();//--Nagu
+		    		}	
+				}else{
+			     //alert("NO WALLET 3333:::::  ");
+			        document.forms[0].hiddenWalletCheckBox.value="NO";
+	    			document.forms[0].walletBooking.value="NO"; 
+	            	document.forms[0].radGatewayType.value = "FB";
+	            	document.forms[0].selectCardPayment.value = "759";//
+	    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	                url = applicationURL+"hiddenAction=SaveDetails";
+	                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	                document.forms[0].submit();//--Nagu	
+			     }	 
+   	}else{
+   		return;
+   	 }
+   	}
+    //
+   	else if(mode!=null && mode=="PayGov"){
+   	 if(confirm("Opted Pay Gov Payment Option,Do you want to Proceed ? ")){
+		   document.forms[0].hiddenWalletCheckBox.value="NO";
+			document.forms[0].walletBooking.value="NO"; 
+      	document.forms[0].radGatewayType.value = "PG";
+      	document.forms[0].selectCardPayment.value = "724";
+	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+          url = applicationURL+"hiddenAction=SaveDetails";
+          document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+          document.forms[0].submit();//--Nagu	 
+}
+}
+
+	   	else{
+    	  //alert("WELCOME TO AGREE PAY");
+    	  if(isWalletSelected!=null){
+ 	    	 if(isWalletSelected.checked){
+ 	    		if(trim(oneTimePassword)==""){
+ 	    			alert("Please enter 'One Time Password'.");
+ 	    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+ 	    		}else if(!isNumberString(oneTimePassword)){
+ 	    				alert("Please enter a valid 'One Time Password'.");
+ 	    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+ 	    			}else{
+ 	    				document.forms[0].hiddenWalletCheckBox.value="YES";
+ 	   				    document.forms[0].walletBooking.value="YES";
+ 	   				    document.forms[0].radGatewayType.value = "C";
+ 	    				document.forms[0].selectCardPayment.value = "721";
+ 	    		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+ 	    	            url = applicationURL+"hiddenAction=SaveDetails";
+ 	    	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+ 	    			document.forms[0].submit();//--Nagu
+ 	        	    }
+ 				}else{
+ 	    			document.forms[0].hiddenWalletCheckBox.value="NO";
+ 	    			document.forms[0].walletBooking.value="NO"; 
+ 	            	document.forms[0].radGatewayType.value = "U";
+ 	            	document.forms[0].selectCardPayment.value = "721";
+ 	    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+ 	                url = applicationURL+"hiddenAction=SaveDetails";
+ 	                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+ 	               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+ 	                document.forms[0].submit();//--Nagu
+ 	    		}	
+ 			}else{
+ 		    // alert("NO WALLET 3333:::::  ");
+ 		     document.forms[0].hiddenWalletCheckBox.value="NO";
+ 			 document.forms[0].walletBooking.value="NO"; 
+ 			 document.forms[0].radGatewayType.value = "U";
+ 			 document.forms[0].selectCardPayment.value = "721";
+ 		 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+ 	           url = applicationURL+"hiddenAction=SaveDetails";
+ 	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+ 	          //  alert("hiddenWalletCheckBox:3333333:"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+ 	            document.forms[0].submit();//--Nagu
+ 		     }
+          
+          }
+		}
+	else if(card=="Wallet"){
+		//alert("WALLET");
+		if(confirm("Do you want to book the ticket through Wallet Balance ?")){
+			fHideConfirmButton();
+			document.forms[0].hiddenAction.value="SaveDetails";
+			//alert("isWalletSelected:"+isWalletSelected.checked);
+			if(isWalletSelected!=null){
+		    	 if(isWalletSelected.checked){
+		    		// alert("YES WALLET 111");
+		    		if(trim(oneTimePassword)==""){
+		    			alert("Please enter 'One Time Password'.");
+		    			setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    		}else if(!isNumberString(oneTimePassword)){
+		    				alert("Please enter a valid 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    		setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else{
+		    				 document.forms[0].hiddenWalletCheckBox.value="YES";
+		   				     document.forms[0].walletBooking.value="YES";
+		   				     document.forms[0].radGatewayType.value = "W";
+		   	 			     document.forms[0].selectCardPayment.value = "146";
+		   				     //alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+		    				 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		    	             url = applicationURL+"hiddenAction=SaveDetails";
+		    	             document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		    				document.forms[0].submit();//--Nagu
+		        	    }
+					}else{
+		    			//alert("NO WALLET 2222");
+		    			document.forms[0].hiddenWalletCheckBox.value="NO";
+		    			document.forms[0].walletBooking.value="NO"; 
+		            	var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		                url = applicationURL+"hiddenAction=SaveDetails";
+		                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		               // alert("hiddenWalletCheckBox::"+document.forms[0].hiddenWalletCheckBox.value+":walletBooking:"+document.forms[0].walletBooking.value);
+		                document.forms[0].submit();//--Nagu
+		    		}	
+				}else{
+			// alert("NO WALLET");
+			 document.forms[0].hiddenWalletCheckBox.value="NO";
+				 document.forms[0].walletBooking.value="NO"; 
+				 document.forms[0].radGatewayType.value = "N";
+				 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		           url = applicationURL+"hiddenAction=SaveDetails";
+		            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		            //alert("isWalletSelected.value::->"+document.forms[0].isWalletSelected.value);
+		            document.forms[0].submit();//--Nagu
+			     }
+		}else{
+			return;
+		}	
+
+	}else if(card=="Net"){
+
+		 if (!validateConsentBeforePayment_NET()) {
+			 alert("NET");   
+			 return;
+	 	    }
+		
+		var mode=document.forms[0].radUPIPaymentOption.value;
+	     if(mode!=null && mode=="BILLDESK"){
+	    	 if(confirm("Opted BILLDESK Payment Option,Do you want to Proceed ? ")){
+	    		//alert("NET BOOKING");
+			     if(isWalletSelected!=null){
+			    	 if(isWalletSelected.checked){
+			    		//alert("YES WALLET");
+			    		document.forms[0].hiddenWalletCheckBox.value="YES";
+		    			document.forms[0].walletBooking.value="YES";
+			      }else{
+			    		//alert("NO WALLET");
+			    		document.forms[0].hiddenWalletCheckBox.value="NO";
+			    		document.forms[0].walletBooking.value="NO"; 
+			   	  }	
+					document.forms[0].radGatewayType.value = "N";
+					 document.forms[0].selectNetBankingPayment.value = "175";
+			 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		            url = applicationURL+"hiddenAction=SaveDetails";
+		            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		            if(isWalletSelected.checked){
+		            	if(trim(oneTimePassword)==""){
+		    				alert("Please enter 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else if(!isNumberString(oneTimePassword)){
+		    				alert("Please enter a valid 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else{
+		    				document.forms[0].submit();//--Nagu
+		        	}
+		            }else{
+		           	 document.forms[0].submit();//--Nagu
+		             }
+				     }else{
+				     //alert("NO WALLET");
+				     document.forms[0].hiddenWalletCheckBox.value="NO";
+					 document.forms[0].walletBooking.value="NO"; 
+					 document.forms[0].radGatewayType.value ="N";
+					 document.forms[0].selectNetBankingPayment.value = "175";
+				 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+			           url = applicationURL+"hiddenAction=SaveDetails";
+			            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+			            document.forms[0].submit();//--Nagu
+				     }
+			 	 //}
+		    }else{
+	 			return;
+	 		 }	 
+		 }
+	     else if(mode!=null && mode=="Paytm"){
+	    	
+	    	 
+	    	 if(confirm("Opted ICICI Payment Option,Do you want to Proceed ? ")){
+	    		   document.forms[0].hiddenWalletCheckBox.value="NO";
+	    			document.forms[0].walletBooking.value="NO"; 
+	            	document.forms[0].radGatewayType.value = "IP";
+	            	document.forms[0].selectCardPayment.value = "733";//178-PAYTM && 733-ICICI
+	    	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	                url = applicationURL+"hiddenAction=SaveDetails";
+	                document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	                document.forms[0].submit();//--Nagu	 
+		}else{
+ 			return;
+		 }	
+ 		}else if(mode!=null && mode=="Axis"){
+ 		   	 if(confirm("Opted AXIS Payment Option,Do you want to Proceed ? ")){
+ 		   		   document.forms[0].hiddenWalletCheckBox.value="NO";
+ 		   			document.forms[0].walletBooking.value="NO"; 
+ 		           	document.forms[0].radGatewayType.value = "AX";
+ 		           	document.forms[0].selectCardPayment.value = "732";//
+ 		   	 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+ 		               url = applicationURL+"hiddenAction=SaveDetails";
+ 		               document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+ 		               document.forms[0].submit();//--Nagu	 
+ 			}else{
+ 				return;
+ 			 }
+ 			}
+
+		 else if(mode!=null && mode=="PayGov"){
+			 if(confirm("Opted PayGov Payment Option,Do you want to Proceed ? ")){	 
+				//alert("NET BOOKING");
+			     if(isWalletSelected!=null){
+			    	 if(isWalletSelected.checked){
+			    		//alert("YES WALLET");
+			    		document.forms[0].hiddenWalletCheckBox.value="YES";
+		    			document.forms[0].walletBooking.value="YES";
+			      }else{
+			    		//alert("NO WALLET");
+			    		document.forms[0].hiddenWalletCheckBox.value="NO";
+			    		document.forms[0].walletBooking.value="NO"; 
+			   	  }	
+					document.forms[0].radGatewayType.value = "PG";
+					 document.forms[0].selectNetBankingPayment.value = "724";
+			 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		            url = applicationURL+"hiddenAction=SaveDetails";
+		            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		            if(isWalletSelected.checked){
+		            	if(trim(oneTimePassword)==""){
+		    				alert("Please enter 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else if(!isNumberString(oneTimePassword)){
+		    				alert("Please enter a valid 'One Time Password'.");
+		    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+		    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+		    			}else{
+		    				document.forms[0].submit();//--Nagu
+		        	}
+		            }else{
+		           	 document.forms[0].submit();//--Nagu
+		             }
+				     }else{
+				     //alert("NO WALLET");
+				     document.forms[0].hiddenWalletCheckBox.value="NO";
+					 document.forms[0].walletBooking.value="NO"; 
+					 document.forms[0].radGatewayType.value ="PG";
+					 document.forms[0].selectNetBankingPayment.value = "724";
+				 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+			           url = applicationURL+"hiddenAction=SaveDetails";
+			            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+			            document.forms[0].submit();//--Nagu
+				     }
+			 	 //}
+			 }else{
+		 			return;
+		 		 }
+}
+}else{
+		//alert("NET BOOKING");
+		/**if(document.forms[0].selectNetBankingPayment.selectedIndex < 1){
+	    	 alert("'Please select Net Banking.");
+		     setTimeout('document.forms[0].selectNetBankingPayment.focus()', 10 );
+	     }else{*/
+		     if(isWalletSelected!=null){
+		    	 if(isWalletSelected.checked){
+		    		//alert("YES WALLET");
+		    		document.forms[0].hiddenWalletCheckBox.value="YES";
+	    			document.forms[0].walletBooking.value="YES";
+		      }else{
+		    		//alert("NO WALLET");
+		    		document.forms[0].hiddenWalletCheckBox.value="NO";
+		    		document.forms[0].walletBooking.value="NO"; 
+		   	  }	
+				document.forms[0].radGatewayType.value = "N";
+				 document.forms[0].selectNetBankingPayment.value = "175";
+		 		var applicationURL = "/OPRSOnline/advanceBooking.do?";
+	            url = applicationURL+"hiddenAction=SaveDetails";
+	            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+	            if(isWalletSelected.checked){
+	            	if(trim(oneTimePassword)==""){
+	    				alert("Please enter 'One Time Password'.");
+	    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+	    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+	    			}else if(!isNumberString(oneTimePassword)){
+	    				alert("Please enter a valid 'One Time Password'.");
+	    				//setTimeout('document.forms[0].txtMobileNo.focus()', 10 );
+	    				setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+	    			}else{
+	    				document.forms[0].submit();//--Nagu
+	        	}
+	            }else{
+	           	 document.forms[0].submit();//--Nagu
+	             }
+			     }else{
+			     //alert("NO WALLET");
+			     document.forms[0].hiddenWalletCheckBox.value="NO";
+				 document.forms[0].walletBooking.value="NO"; 
+				 document.forms[0].radGatewayType.value = "N";
+				 document.forms[0].selectNetBankingPayment.value = "175";
+			 	 var applicationURL = "/OPRSOnline/advanceBooking.do?";
+		           url = applicationURL+"hiddenAction=SaveDetails";
+		            document.forms[0].action = url;//+document.fm.jSESSIONID.value;
+		            document.forms[0].submit();//--Nagu
+			     }
+		 	 //}	
+		}
+
+	}
+function validateUPIPaymentOption() {
+	    alert("Hello 1");
+	   var paytmRadio = document.getElementById("inlineRadio1");
+	   alert("Hello 2:"+paytmRadio);
+	    if (!paytmRadio.checked) {
+	        alert("Please select Paytm UPI payment option.");
+	        return false;
+	    }
+	    return true;
+	}	
+	
+function fHideConfirmButton(){	
+	document.getElementById("WalletPayment1").style.display = "none";
+	document.getElementById("WalletPayment2").style.display = "none";
+	document.getElementById("dvWalletConfirmLoadStatus").style.display = "";
+}
+function OTPRequest(mobileNo,totalAmt,walletBalance){
+	//alert(document.getElementById("checkbox").value);
+	//alert("mobileNo:"+mobileNo);
+  if(document.getElementById("isWalletSelected").checked==true){
+	//var mobileNoNew=mobileNo.value;
+	if(walletBalance > 0.00){
+			//alert("Request for OTP " +mobileNo+ " use the wallet Balance.");
+  			var mobileNo=mobileNo.value;
+  			xhttp = new XMLHttpRequest();
+  			xhttp.onreadystatechange = function() {
+    		if (this.readyState == 4 && this.status == 200) {
+        		var res = this.responseText;
+        	//
+        	document.getElementById("otp1").style.display = "";
+			document.getElementById("otp2").style.display ="";
+		    setTimeout('document.forms[0].txtOneTimePassword.focus()', 10 );
+    		
+    }
+  };
+  
+  xhttp.open("GET", "./advanceBooking.do?GetOTP=GetOTP&MobileNo="+mobileNo, true);
+  xhttp.send();
+	}else{
+		alert("Sorry not able to process ,Your Wallet balance is low :Rs "+walletBalance+"Please use Credit / Debit Card Option / Net Banking");
+	}
+
+  }else{
+	  alert("Sorry something went wrong");
+	  }
+}
+//Function to trim values
+function trim(inputString){
+	//Removes leading and trailing spaces from the passed string. Also removes consecutive spaces and replaces it with one space.
+	var retValue = inputString;
+	if(retValue!="") {
+		retValue = String(retValue);
+		var ch = retValue.substring(0, 1);
+		while (ch == " "){
+			//Check for spaces at the beginning of the string
+			retValue = retValue.substring(1, retValue.length);
+			ch = retValue.substring(0, 1);
+		}
+		ch = retValue.substring(retValue.length-1, retValue.length);
+		while (ch == " ") {
+			//Check for spaces at the end of the string
+			retValue = retValue.substring(0, retValue.length-1);
+			ch = retValue.substring(retValue.length-1, retValue.length);
+		}
+		while (retValue.indexOf("  ") != -1) {
+			//Note that there are two spaces in the string - look for multiple spaces within the string
+			retValue = retValue.substring(0, retValue.indexOf("  ")) + retValue.substring(retValue.indexOf("  ")+1, retValue.length); // Again, there are two spaces in each of the strings
+		}
+	}
+	return retValue; 
+} // Ends the "trim" function
+function isNumberString(InString){
+	var value=InString;
+	var RefString="1234567890";
+	for (var Count=0; Count < value.length; Count++)  {
+		TempChar= value.substring (Count, Count+1);
+		if (RefString.indexOf (TempChar, 0)==-1)  
+			return (false);
+	}
+	return (true);
+}//End of 'function isNumberString(InString)'
+</script>
+<script>
+$(document).ready(function() {
+    $("div.bhoechie-tab-menu>div.list-group>a").click(function(e) {
+        e.preventDefault();
+        $(this).siblings('a.active').removeClass("active");
+        $(this).addClass("active");
+        var index = $(this).index();
+        $("div.bhoechie-tab>div.bhoechie-tab-content").removeClass("active");
+        $("div.bhoechie-tab>div.bhoechie-tab-content").eq(index).addClass("active");
+    });
+});
+</script>
+<script>
+function validateOTP(){
+    var redemWalletAmt=document.getElementById('hiddenRedemWalletAmt').value;
+    var journeyType="O";
+    var onwardTotalFare="70.00";
+    var returnTotalFare="70.0";
+    var ticketFare="";
+    if(journeyType=="O"){
+    	ticketFare=onwardTotalFare;
+        }else{
+        	ticketFare=returnTotalFare;   
+        }
+    
+	if(document.forms[0].txtOneTimePassword.value.length>=4){
+		RecheckOTP(redemWalletAmt,ticketFare);
+	}
+}
+
+function RecheckOTP(wlredemAmt,ticketFare){
+	//alert("wlredemAmt:"+wlredemAmt+":TicketFare:"+ticketFare);
+    var floatWlredemAmt=parseFloat(wlredemAmt);
+    var floatTicketFare=parseFloat(ticketFare);
+    var diffAmt=floatTicketFare-floatWlredemAmt;
+    var rounddiffAmt =Math.round(diffAmt);
+	//
+	document.forms[0].hiddenWalletPGAmount.value=rounddiffAmt;
+	var walletBalance=document.forms[0].hiddenWalletPGAmount.value;
+    if(floatTicketFare < floatWlredemAmt){
+    	if (window.XMLHttpRequest) {
+   	     req = new XMLHttpRequest();
+          } else if (window.ActiveXObject) {
+   	     req = new ActiveXObject("Microsoft.XMLHTTP");
+          }
+           var otp=document.getElementById('txtOneTimePassword').value;
+           var s="VerifyOTP";
+           //var url="manageOnlinePassengerNewBusPassSystem.do?hiddenAction="+s+"&OTP="+t;
+           var url="advanceBooking.do?VerifyOTP=VerifyOTP&OTP="+otp+","+wlredemAmt+","+rounddiffAmt+","+walletBalance;
+		   req.open("GET", url, true);
+           req.onreadystatechange = handleHttpResponseRest;
+           req.send(null);                  
+          function handleHttpResponseRest(){
+   	     if (req.readyState==4 && req.status==200)
+       		{
+                  var data = req.responseText;
+   				//alert("Response Data:"+data);
+   				var str = data;
+   				var res = str.split(",");
+   				var data=res[0];
+   				var walAmt=res[1];
+   				//alert("Final Data"+data+":WalAmt:"+walAmt);
+   			   //var code = "<img src ='images/tickMark.gif' border = '0'></img>";
+   			   var code = "";
+   			   //var code1 = "<img src ='images/cancelSmall.gif' border = '0'></img>";
+   				var code1 = "";
+       	    	if (window.XMLHttpRequest) {
+                   if(data == "Valid"){
+                      /// alert("Valid 1111111111111111111");
+                   	//document.getElementById("otp3").style.display = "block";
+                   	    document.getElementById("validateMobileNo").innerHTML=data;	
+     					document.getElementById("validateMobileNo1").innerHTML=code;
+     					document.getElementById("validateMobileNo").style.color = "Green"	;
+
+     					document.getElementById("orignal1").style.display = "none";
+     					document.getElementById("orignal2").style.display = "none";
+     					document.getElementById("wallet1").style.display = "none";
+     					document.getElementById("wallet2").style.display = "none";
+     					document.getElementById("walletAmount1").innerHTML=walAmt;	
+     					document.getElementById("walletAmount2").innerHTML=walAmt;	
+     					//
+     					document.getElementById("WalletPayment1").style.display = "";
+     					document.getElementById("WalletPayment2").style.display = "";
+     					//Wallet Tabs
+     					document.getElementById("WalletPaymentNew1").style.display = "";
+     					document.getElementById("WalletPaymentNew2").style.display = "";
+     					document.getElementById("creditDebit").style.display = "none";
+     					document.getElementById("hideconfirm1").style.display = "";
+     					document.getElementById("hideconfirm2").style.display = "";
+     					document.getElementById("hideconfirm3").style.display = "";
+     					document.getElementById("hideconfirm4").style.display = "";
+     					document.getElementById("hideconfirm5").style.display = "";
+     					//document.getElementById("creditDebit1").style.display = "none";
+     					//document.getElementById("creditDebit2").style.display = "none";
+     					document.forms[0].walletBooking.value="YES";
+     					
+   				}else{
+   					// alert("NOT Valid 1111111111111111111");
+   					//document.getElementById("otp3").style.display = "none";
+   					    document.getElementById("validateMobileNo").innerHTML=data;	
+     					document.getElementById("validateMobileNo1").innerHTML=code;
+     					document.getElementById("validateMobileNo").style.color = "Green"	;
+     					
+     					document.getElementById("orignal1").style.display = "";
+     					document.getElementById("orignal2").style.display = "";
+     					document.getElementById("wallet1").style.display = "none";
+     					document.getElementById("wallet2").style.display = "none";
+     					//document.getElementById("walletAmount").innerHTML=walAmt;	
+     					document.getElementById("WalletPayment1").style.display = "none";
+     					document.getElementById("WalletPayment2").style.display = "none";
+     					
+     				//Wallet Tabs
+     					document.getElementById("WalletPaymentNew1").style.display = "none";
+     					document.getElementById("WalletPaymentNew2").style.display = "none";
+     					document.getElementById("creditDebit").style.display = "";
+     					//document.getElementById("creditDebit1").style.display = "";
+     					//document.getElementById("creditDebit2").style.display = "";
+     					document.forms[0].walletBooking.value="NO";
+     					document.getElementById("hideconfirm1").style.display = "none";
+     					document.getElementById("hideconfirm2").style.display = "none";
+     					document.getElementById("hideconfirm3").style.display = "none";
+     					document.getElementById("hideconfirm4").style.display = "none";
+     					document.getElementById("hideconfirm5").style.display = "none";
+   				}
+       		}else{
+   				if(data == "Valid"){
+   					// alert("Valid 22222222222222222");
+   					//document.getElementById("otp3").style.display = "block";
+   					document.getElementById("validateMobileNo").textContent=data;	
+     					document.getElementById("validateMobileNo").style.color = "Green";
+     					document.getElementById("validateMobileNo1").innerHTML=code;
+     					
+     					document.getElementById("orignal1").style.display = "none";
+     					document.getElementById("orignal2").style.display = "none";
+     					document.getElementById("wallet1").style.display = "none";
+     					document.getElementById("wallet2").style.display = "none";
+     					document.getElementById("walletAmount1").innerHTML=walAmt;
+     					document.getElementById("walletAmount2").innerHTML=walAmt;
+     					//
+     					document.getElementById("WalletPayment1").style.display = "";
+     					document.getElementById("WalletPayment2").style.display = "";
+     					document.getElementById("hideconfirm1").style.display = "";
+     				//Wallet Tabs
+     					document.getElementById("WalletPaymentNew1").style.display = "";
+     					document.getElementById("WalletPaymentNew2").style.display = "";
+     					document.getElementById("creditDebit").style.display = "none";
+     					//document.getElementById("creditDebit1").style.display = "none";
+     					//document.getElementById("creditDebit2").style.display = "none";
+     					document.forms[0].walletBooking.value="YES";
+     					document.getElementById("hideconfirm1").style.display = "";
+     					document.getElementById("hideconfirm2").style.display = "";
+     					document.getElementById("hideconfirm3").style.display = "";
+     					document.getElementById("hideconfirm4").style.display = "";
+     					document.getElementById("hideconfirm5").style.display = "";
+     						
+   				}else{
+   					//alert("NOT Valid 2222222222222222222");
+   					//document.getElementById("otp3").style.display = "none";
+   					document.getElementById("validateMobileNo").textContent=data;	
+     					document.getElementById("validateMobileNo").style.color = "Red"	;
+     					document.getElementById("validateMobileNo1").innerHTML=code1;
+
+     					document.getElementById("orignal1").style.display = "";
+     					document.getElementById("orignal2").style.display = "";
+     					document.getElementById("wallet1").style.display = "none";
+     					document.getElementById("wallet2").style.display = "none";
+     					document.getElementById("WalletPayment1").style.display = "none";
+     					document.getElementById("WalletPayment2").style.display = "none";
+     					
+     				   //Wallet Tabs
+     					document.getElementById("WalletPaymentNew1").style.display = "none";
+     					document.getElementById("WalletPaymentNew2").style.display = "none";
+     					document.getElementById("creditDebit").style.display = "";
+     					//document.getElementById("creditDebit1").style.display = "";
+     					//document.getElementById("creditDebit2").style.display = "";
+     					document.forms[0].walletBooking.value="NO";
+     					document.getElementById("hideconfirm1").style.display = "none";
+     					document.getElementById("hideconfirm2").style.display = "none";
+     					document.getElementById("hideconfirm3").style.display = "none";
+     					document.getElementById("hideconfirm4").style.display = "none";
+     					document.getElementById("hideconfirm5").style.display = "none";
+   				}
+   			}
+   		}
+   	}
+    }else{
+    	if(confirm("Wallet Balace is lesser than Journey Ticket Amount.Please pay rest of the money from Any PG : Amount:Rs " +rounddiffAmt)){
+		//alert("Wallet Balace is lesser than Journey Ticket Amount.Please pay rest of the money from Any PG : Amount:Rs "+diffAmt);
+     	if (window.XMLHttpRequest) {
+    	     req = new XMLHttpRequest();
+           } else if (window.ActiveXObject) {
+    	     req = new ActiveXObject("Microsoft.XMLHTTP");
+           }
+            var otp=document.getElementById('txtOneTimePassword').value;
+    	    var s="VerifyOTP";
+            //var url="manageOnlinePassengerNewBusPassSystem.do?hiddenAction="+s+"&OTP="+t;
+            //var url="advanceBooking.do?VerifyOTP=VerifyOTP&OTP="+otp+","+wlredemAmt;
+           // var url="advanceBooking.do?VerifyOTP=VerifyOTP&OTP="+otp+","+wlredemAmt+","+rounddiffAmt;
+            var url="advanceBooking.do?VerifyOTP=VerifyOTP&OTP="+otp+","+wlredemAmt+","+rounddiffAmt+","+walletBalance;
+            req.open("GET", url, true);
+            req.onreadystatechange = handleHttpResponseRest;
+            req.send(null);                  
+           function handleHttpResponseRest(){
+    	     if (req.readyState==4 && req.status==200)
+        		{
+                   var data = req.responseText;
+    				//alert("Response Data:"+data);
+    				var str = data;
+    				var res = str.split(",");
+    				var data=res[0];
+    				var walAmt=res[1];
+    				//alert("Final Data"+data+":WalAmt:"+walAmt);
+    			   //var code = "<img src ='images/tickMark.gif' border = '0'></img>";
+    			   var code = "";
+    			   //var code1 = "<img src ='images/cancelSmall.gif' border = '0'></img>";
+    				var code1 = "";
+        	    	if (window.XMLHttpRequest) {
+                    if(data == "Valid"){
+                       /// alert("Valid 1111111111111111111");
+                    	//document.getElementById("otp3").style.display = "block";
+                    	document.getElementById("validateMobileNo").innerHTML=data;	
+      					document.getElementById("validateMobileNo1").innerHTML=code;
+      					document.getElementById("validateMobileNo").style.color = "Green"	;
+
+      					document.getElementById("orignal1").style.display = "none";
+      					document.getElementById("orignal2").style.display = "none";
+      					document.getElementById("orignal3").style.display = "none";
+      					document.getElementById("wallet1").style.display = "";
+      					document.getElementById("wallet2").style.display = "";
+      					document.getElementById("wallet3").style.display = "";
+      					document.getElementById("walletAmount1").innerHTML=walAmt;	
+      					document.getElementById("walletAmount2").innerHTML=walAmt;
+      					document.getElementById("walletAmount3").innerHTML=walAmt;	
+      					//
+      					//document.getElementById("WalletPayment1").style.display = "";
+      					//document.getElementById("WalletPayment2").style.display = "";
+      					//Wallet Tabs
+      					//document.getElementById("WalletPaymentNew1").style.display = "";
+      					//document.getElementById("WalletPaymentNew2").style.display = "";
+      					//document.getElementById("creditDebit").style.display = "none";
+      					//document.getElementById("creditDebit1").style.display = "none";
+      					//document.getElementById("creditDebit2").style.display = "none";
+      					document.getElementById("hideconfirm1").style.display = "";
+     					document.getElementById("hideconfirm2").style.display = "";
+     					document.getElementById("hideconfirm3").style.display = "";
+     					document.getElementById("hideconfirm4").style.display = "";
+     					document.getElementById("hideconfirm5").style.display = "";
+
+      					
+    				}else{
+    					// alert("NOT Valid 1111111111111111111");
+    					//document.getElementById("otp3").style.display = "none";
+    					document.getElementById("validateMobileNo").innerHTML=data;	
+      					document.getElementById("validateMobileNo1").innerHTML=code;
+      					document.getElementById("validateMobileNo").style.color = "Green"	;
+      					
+      					document.getElementById("orignal1").style.display = "";
+      					document.getElementById("orignal2").style.display = "";
+      					document.getElementById("orignal3").style.display = "";
+      					document.getElementById("wallet1").style.display = "none";
+      					document.getElementById("wallet2").style.display = "none";
+      					document.getElementById("wallet3").style.display = "none";
+      					document.getElementById("walletAmount1").innerHTML=walAmt;	
+      					document.getElementById("walletAmount2").innerHTML=walAmt;	
+      					document.getElementById("walletAmount3").innerHTML=walAmt;
+      					//document.getElementById("WalletPayment1").style.display = "none";
+      					//document.getElementById("WalletPayment2").style.display = "none";
+      					
+      				//Wallet Tabs
+      					//document.getElementById("WalletPaymentNew1").style.display = "none";
+      					//document.getElementById("WalletPaymentNew2").style.display = "none";
+      					//document.getElementById("creditDebit").style.display = "";
+      					//document.getElementById("creditDebit1").style.display = "";
+      					//document.getElementById("creditDebit2").style.display = "";
+      					document.getElementById("hideconfirm1").style.display = "none";
+     					document.getElementById("hideconfirm2").style.display = "none";
+     					document.getElementById("hideconfirm3").style.display = "none";
+     					document.getElementById("hideconfirm4").style.display = "none";
+     					document.getElementById("hideconfirm5").style.display = "none";
+    				}
+        		}else{
+    				if(data == "Valid"){
+    					// alert("Valid 22222222222222222");
+    					//document.getElementById("otp3").style.display = "block";
+    					document.getElementById("validateMobileNo").textContent=data;	
+      					document.getElementById("validateMobileNo").style.color = "Green";
+      					document.getElementById("validateMobileNo1").innerHTML=code;
+      					
+      					document.getElementById("orignal1").style.display = "none";
+      					document.getElementById("orignal2").style.display = "none";
+      					document.getElementById("orignal3").style.display = "none";
+      					document.getElementById("wallet1").style.display = "none";
+      					document.getElementById("wallet2").style.display = "none";
+      					document.getElementById("wallet3").style.display = "none";
+      					document.getElementById("walletAmount1").innerHTML=walAmt;
+      					document.getElementById("walletAmount2").innerHTML=walAmt;
+      					document.getElementById("walletAmount3").innerHTML=walAmt;
+      					document.getElementById("hideconfirm1").style.display = "";
+     					document.getElementById("hideconfirm2").style.display = "";
+     					document.getElementById("hideconfirm3").style.display = "";
+     					document.getElementById("hideconfirm4").style.display = "";
+     					document.getElementById("hideconfirm5").style.display = "";
+      					//
+      					//document.getElementById("WalletPayment1").style.display = "";
+      					//document.getElementById("WalletPayment2").style.display = "";
+      				//Wallet Tabs
+      					//document.getElementById("WalletPaymentNew1").style.display = "";
+      					//document.getElementById("WalletPaymentNew2").style.display = "";
+      					//document.getElementById("creditDebit").style.display = "none";
+      					//document.getElementById("creditDebit1").style.display = "none";
+      					//document.getElementById("creditDebit2").style.display = "none";
+      						
+    				}else{
+    					//alert("NOT Valid 2222222222222222222");
+    					//document.getElementById("otp3").style.display = "none";
+    					document.getElementById("validateMobileNo").textContent=data;	
+      					document.getElementById("validateMobileNo").style.color = "Red"	;
+      					document.getElementById("validateMobileNo1").innerHTML=code1;
+
+      					document.getElementById("orignal1").style.display = "";
+      					document.getElementById("orignal2").style.display = "";
+      					document.getElementById("orignal3").style.display = "";
+      					document.getElementById("wallet1").style.display = "none";
+      					document.getElementById("wallet2").style.display = "none";
+      					document.getElementById("wallet3").style.display = "none";
+      					document.getElementById("walletAmount1").innerHTML=walAmt;	
+      					document.getElementById("walletAmount2").innerHTML=walAmt;	
+      					document.getElementById("walletAmount3").innerHTML=walAmt;
+      					//document.getElementById("WalletPayment1").style.display = "none";
+      					//document.getElementById("WalletPayment2").style.display = "none";
+      				//Wallet Tabs
+      					//document.getElementById("WalletPaymentNew1").style.display = "none";
+      					//document.getElementById("WalletPaymentNew2").style.display = "none";
+      					//document.getElementById("creditDebit").style.display = "";
+      					//document.getElementById("creditDebit1").style.display = "";
+      					//document.getElementById("creditDebit2").style.display = "";
+      					document.getElementById("hideconfirm1").style.display = "none";
+     					document.getElementById("hideconfirm2").style.display = "none";
+     					document.getElementById("hideconfirm3").style.display = "none";
+     					document.getElementById("hideconfirm4").style.display = "none";
+     					document.getElementById("hideconfirm5").style.display = "none";
+    				}
+    			}
+    		}
+    	}
+     	}else{
+			return;
+		}
+      }
+}//End of isTripCodeExits
+</script>
+
+<script type="text/javascript">
+	//GsrtcPhone_production
+	var applicationURL1 = "https://www.gsrtc.in/OPRSPhonepe/managePhonePeBookingProcess.do?";
+   //GsrtcPhone_Local
+   //var applicationURL1 = "http://192.168.222.170:8080/managePhonePeBookingProcess.do?";
+		function pushToPhonepeOnlineApplication(obrefno,fare) {
+alert("PushToPhonepeOnlineApplication");
+			var action="SaveDetails";
+		      $.ajax({
+					type:"POST",
+		     		url: applicationURL1,
+		     		data:"PhonepeOBRequest="+obrefno+","+fare+"",
+		     		cache: false,
+		     		crossDomain : true,
+		        	success:function(response){
+		         	  alert("Phone pe Sucess Response:"+response);
+		        		window.location.href=response; 
+			    } // End of 'Success()'	
+		}); //End of 'jquery_auto.ajax({'
+		}	
+</script>
+
+<script>
+document.onkeydown = function(e) {
+	  if(event.keyCode == 123) {
+	     return false;
+	  }
+	  if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+	     return false;
+	  }
+	  if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
+	     return false;
+	  }
+	  if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+	     return false;
+	  }
+	  if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+	     return false;
+	  }
+	}
+
+
+</script>
+
+<script>
+function validateConsentBeforePayment_CARD() {
+    var consent = document.getElementById("acceptRules_CARD");
+
+    if (!consent || !consent.checked) {
+        alert("Please read and accept the communication consent to proceed with payment.");
+        return false;
+    }
+    return true;
+}
+
+function validateConsentBeforePayment_UPI() {
+    var consent = document.getElementById("acceptRules_UPI");
+
+    if (!consent || !consent.checked) {
+        alert("Please read and accept the communication consent to proceed with payment.");
+        return false;
+    }
+    return true;
+}
+
+function validateConsentBeforePayment_NET() {
+    var consent = document.getElementById("acceptRules_NET");
+
+    if (!consent || !consent.checked) {
+        alert("Please read and accept the communication consent to proceed with payment.");
+        return false;
+    }
+    return true;
+}
+</script>
+
+</head>
+
+<!-- <body oncontextmenu="return false"> -->
+<body>
+<form name="advanceBookingActionForm" method="post" action="/OPRSOnline/advanceBooking.do">	
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>                        
+      </button>
+      <a class="navbar-brand" href="https://www.gsrtc.in"><img src="images/logo.png" alt="GSRTC" style="margin-top: -8px; margin-left: 50px;"></a>
+      <div id="enjoyM" class="caption" style="text-align:center"><strong>
+      
+      
+      Enjoy the rich heritage &amp; warm hospitality  of Gujarat with GSRTC ...
+      
+      
+      </strong><br><span style="color: #e8ff00">
+       
+      
+      Avail Discount on premium and non premium services
+      
+      
+      </span> </div>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar" style="margin-top: 10px;">
+    
+      <ul class="nav navbar-nav navbar-right">
+       
+        
+       
+        <li><a href="http://www.gsrtc.in"><span style="color:#fff">Home</span></a></li>
+        
+        
+      </ul>
+      
+    </div>
+  </div>
+</nav>
+
+
+<div class="container text-center">  
+  
+  <div class="row content">    
+    <div class="col-sm-12 text-left"> 
+    
+    <div style="width:90%">
+	<marquee behavior="scroll" direction="left" onmouseover="this.stop();" onmouseout="this.start();" scrolldelay="200" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #990000; font-weight: bold; margin-top: 4px; padding: 3px;">
+	1. User should never press either forward or Back buttons during the transaction. &nbsp;
+	2. User should never refresh the page during the transaction. &nbsp;
+	3. Please ensure the reliable Internet Connectivity during entire transaction. &nbsp;
+	4. Ensure whole transaction should be completed within 15 minutes otherwise Seat might have got released. &nbsp;
+	5. For any FAILURE Transactions during E &amp; M Booking (Amount debited from the bank account but Ticket no generated), Refund will be processed within 7 to 10 working days.
+	</marquee>
+	</div>
+    
+     
+     
+      <h3>Passenger details</h3>
+      
+      
+       <hr>
+    </div>
+  </div>
+</div>
+
+<!-- Ven -->
+<div class="container">
+<div class="row">
+  <div class="col-sm-8">      
+  <div class="well">
+   
+     
+		   
+		   
+		   
+		   <h4>Trip Details</h4>
+		   
+   
+   
+   
+   
+   
+   
+   
+   
+    
+   <hr>
+  <!-- New page*************************************** -->
+<div class="container">
+  <div class="row" style="margin-left: -30px; font-size: 12px;">
+  <div class="col-md-2 text-uppercase" style="color:#ff6633; font-weight:bold">
+            
+           
+           Trip Details
+           
+      </div>
+      <div class="col-md-3" style="color:#ff6633; font-weight:bold">
+         
+         
+          One Way
+          
+          
+       </div>
+       
+      <div class="top-buffer"></div>
+  
+  
+      <div class="col-md-2 text-uppercase">
+           
+           
+           Date of Journey
+           
+           
+      </div>
+      <div class="col-md-3">
+          30/06/2026
+       </div>
+       
+       
+      <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+           
+           
+           Service Start Place
+           
+           
+      </div>
+      <div class="col-md-3">
+         <strong> JUNAGADH</strong>
+       </div>
+       
+       
+       
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+          
+          
+           Service Start Point
+           
+           
+      </div>
+      <div class="col-md-3">
+          JUNAGADH
+       </div>
+       
+       
+       
+       
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+          
+          
+           Passenger Start Point
+           
+           
+      </div>
+      <div class="col-md-3">
+         JUNAGADH
+       </div>
+       
+       
+       
+       
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+           
+           
+           Time of Departure
+           
+           
+      </div>
+      <div class="col-md-3">
+         06:00
+       </div>
+       
+        <div class="top-buffer"></div>
+       
+       
+       
+       
+       <div class="col-md-2 text-uppercase">
+           
+           
+           CLASS OF SERVICE
+           
+           
+      </div>
+      <div class="col-md-3">
+         AC LUXURY
+       </div>
+       
+        <div class="top-buffer"></div>
+        
+        
+        <div class="col-md-2 text-uppercase">
+              
+           
+           PICKUP POINT
+           
+      </div>
+      <div class="col-md-3">
+         JUNAGADH
+       </div>
+       
+       
+       
+       
+        <div class="top-buffer"></div>
+      <div class="col-md-2 text-uppercase">
+         
+         
+          SERVICE END PLACE
+          
+          
+      </div>
+      <div class="col-md-3">
+          JAMNAGAR
+       </div>
+        
+       
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+          
+          
+          PASSENGER END POINT
+          
+          
+      </div>
+      <div class="col-md-3">
+        DHORAJI
+       </div>
+       
+       
+       
+       
+       
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+           
+           
+          TRIP CODE
+          
+          
+      </div>
+      <div class="col-md-3">
+         0600JNDJMNAC45
+       </div>
+       
+        <div class="top-buffer"></div>
+       
+       
+       
+       <div class="col-md-2 text-uppercase">
+          
+          
+          NO. OF SEATS
+          
+      </div>
+      <div class="col-md-3">
+        1
+       </div>
+       
+        <div class="top-buffer"></div>
+       <div class="col-md-2 text-uppercase">
+          
+          
+          SEAT NO/S
+          
+          
+      </div>
+      
+      <div class="col-md-3">
+        5
+       </div>
+       
+       <div class="top-buffer"></div>
+       
+      
+      
+       
+  </div>
+  
+</div>
+
+  <!-- New Page End Venkatesh **************************** -->
+   
+   </div>
+   
+ <!-- Passenger Info Block  Start-->  
+   <div class="well">
+     
+    
+    <h4>Passenger Information</h4> 
+    
+     
+      <hr>
+    
+       
+    
+       <div class="col-md-4 text-uppercase pageHeader">
+          NAME
+      </div>      
+      <div class="col-md-4 pageHeader">
+         AGE
+       </div>
+       
+       <div class="col-md-4 pageHeader">
+         GENDER
+       </div>
+       
+       
+        <div class="top-buffer"></div>
+       
+       
+       
+        <div class="col-md-4 text-uppercase">
+          <input type="hidden" name="txtNameArray" value="JOHN DOE" style=""> JOHN DOE
+      </div>      
+      <div class="col-md-4">
+          <input type="hidden" name="txtAgeArray" value="30" style=""> 30&nbsp;&nbsp;(Adult)&nbsp;
+       </div>
+       <div class="col-md-4">
+          <input type="hidden" name="selectGenderArray" value="M" style="">&nbsp;Male&nbsp;
+       </div>
+       
+       
+       
+        <div class="top-buffer"></div>
+        
+        <div class="col-md-4 text-uppercase">
+          
+          
+          EMAIL ID
+          
+          
+      </div>      
+      <div class="col-md-5">
+         DUMMYEMAIL@GMAIL.COM
+       </div>
+       
+        <div class="top-buffer"></div>
+               
+        <div class="col-md-4 text-uppercase">
+       
+       
+          MOBILE NO
+          
+          
+      </div>      
+      <div class="col-md-5">
+         9924513876
+       </div>
+       <div class="top-buffer"></div>
+       
+  </div>
+  
+   <!-- Passenger Info Block  End-->  
+
+      <!-- PG Tabs -->     
+    
+   
+   
+<!-- New PG Tabs VEN **********************************************************************************************************    -->
+ 
+ <script>
+function openConsentModal_CARD() {
+    document.getElementById("consentModal").style.display = "block";
+}
+function openConsentModal_NET() {
+    document.getElementById("consentModal").style.display = "block";
+}
+function openConsentModal_UPI() {
+    document.getElementById("consentModal").style.display = "block";
+}
+
+function closeConsentModal() {
+    document.getElementById("consentModal").style.display = "none";
+}
+</script>
+ 
+ 
+   <div class="container" style="width: 150%">
+	<div class="row">
+        <div class="col-md-8 bhoechie-tab-container">
+            <div class="col-md-4 bhoechie-tab-menu">
+              <div class="list-group">
+               <a href="#" class="list-group-item" id="creditDebit1">
+                  <h4><br>CREDIT/DEBIT CARD </h4>
+                </a>
+                <a href="#" class="list-group-item" id="creditDebit2">
+                  <h4><br>UPI PAYMENT</h4>
+                </a>
+                
+                <a href="#" class="list-group-item" id="creditDebit3">
+                  <h4><br>NET BANKING </h4>
+                </a>
+               
+               <a href="#" class="list-group-item active" id="WalletPaymentNew1" style="display:none">
+                  <h4><br>GSRTC Wallet</h4>
+                </a>
+                
+              </div>
+            </div>
+            <div class="col-md-8 bhoechie-tab">
+                <!-- Credit / Debit Card -->
+                <div class="bhoechie-tab-content active" id="creditDebit">
+                    <center>
+                      
+                      <h2 style="margin-top: 0;color:#55518a">Credit / Debit Card</h2>
+                      <h4>All banks Debit/Credit Card accepted </h4>
+                      <div class="form-group" style="display:none">
+    <label for="exampleFormControlSelect1">Select Bank</label>
+    <select name="selectCardPayment" class="form-control" id="exampleFormControlSelect1" style="width: 300px">
+								            <option value="">--</option>
+								            <option value="694">CC&nbsp;AVENUE&nbsp;GATEWAY</option>
+								            <option value="721">AGGRE PAY</option>
+                                </select>
+  </div>
+  <div class="form-group"><br>
+ 				<span class="well"><input class="form-check-input" type="radio" name="radUPIPaymentOption" id="inlineRadio1" value="Paytm" style=""> <img src="images/icici_bank_img.png"></span>
+  <br>
+  <br>
+  	<!-- <span class="well"><input class="form-check-input" type="radio" name="radUPIPaymentOption" id="inlineRadio3" value="Federal"> <img src="images/federal.jpeg"></span> -->
+  </div>
+  <div align="left" style="color:#007bff;font-weight:bold;font-size:16px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" width="20" height="20" style="vertical-align:middle;margin-right:6px;">
+    Consent: Booking details via SMS / WhatsApp
+</div>
+  
+  <div class="msgBlock">
+
+    <div class="slider-container" onclick="toggleSlider(this,'SMS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>SMS</b></span> 
+
+    <div class="slider-container checked" onclick="toggleSlider(this,'WS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>WhatsApp</b></span>
+
+</div>  
+ <div style="font-size:13px;">
+    <input type="checkbox" id="acceptRules_CARD" name="acceptRules" required="" onclick="openConsentModal_CARD();" style="">
+    I have read and I accept all the communication rules mentioned above.
+    I confirm that my mobile number is correct and I am ready to receive
+    automated alerts via SMS and/or WhatsApp.
+</div>
+  <div id="orignal1">
+    
+  <a href="javascript:Submit('Card');" class="btn btn-danger" id="hideconfirm1">Pay&nbsp;Rs.70.00</a>
+  
+  
+  </div>
+  
+  <div id="wallet1" style="display:none">
+    
+  <a href="javascript:Submit('Card');" class="btn btn-danger" id="hideconfirm3">Pay&nbsp;Rs.<span id="walletAmount1"></span></a>
+  
+  
+  </div>
+  
+  <div id="WalletPayment1" style="display:none">
+    
+  <a href="javascript:Submit('Wallet');" class="btn btn-danger" id="hideconfirm5">Confirm</a>
+  
+  
+  </div>
+  
+  <div align="right" style="display:none" id="dvWalletConfirmLoadStatus">Processing ..<img src="images/loading.gif" width="35" height="8" border="0">&nbsp;</div>
+  
+  
+  
+                    </center>
+                    <div class="top-buffer"></div>
+                </div>
+                
+                
+                
+<!--UPI PAYMENTS -->
+                
+                <div class="bhoechie-tab-content">
+                    <center>
+                     
+                     
+                      <h2 style="margin-top: 0;color:#55518a">UPI PAYMENTS</h2>
+                      <!-- <div class="form-group"><img src="images/Ap_logo.png" width="70" height="30"  border="0"> </div> -->
+                      
+                      <div class="form-group"><br>
+
+			 	<span class="well"><input class="form-check-input" type="radio" name="radUPIPaymentOption" id="inlineRadio2" value="Paytm" checked="" style=""> <img src="images/icici_bank_img.png"></span>
+     
+      			 &nbsp;
+      			  <span class="well"><input class="form-check-input" type="radio" name="radUPIPaymentOption" id="inlineRadio3" value="PhonePe" style=""> <img src="images/phonePe_img.png"></span>
+				<br>
+				<br>
+  	<!-- <span class="well"><input class="form-check-input" type="radio" name="radUPIPaymentOption" id="inlineRadio3" value="Federal"> <img src="images/federal.jpeg"></span> -->
+  
+     			
+    </div>
+     <div><br>
+ 
+ <div align="left" style="color:#007bff;font-weight:bold;font-size:16px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" width="20" height="20" style="vertical-align:middle;margin-right:6px;">
+    Consent: Booking details via SMS / WhatsApp
+</div>
+  
+  <div class="msgBlock">
+
+    <div class="slider-container" onclick="toggleSlider(this,'SMS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>SMS</b></span> 
+
+    <div class="slider-container checked" onclick="toggleSlider(this,'WS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>WhatsApp</b></span>
+
+</div>
+                       
+
+<div style="font-size:13px;">
+    <input type="checkbox" id="acceptRules_UPI" name="acceptRules" required="" onclick="openConsentModal_UPI();" style="">
+    I have read and I accept all the communication rules mentioned above.
+    I confirm that my mobile number is correct and I am ready to receive
+    automated alerts via SMS and/or WhatsApp.
+</div>
+
+     <div id="orignal3">
+   
+  <a href="javascript:Submit('UPI');" class="btn btn-danger">Pay&nbsp;Rs.70.00</a>
+  
+  
+  
+  </div>
+  
+  <div id="wallet3" style="display:none">
+   
+  <a href="javascript:Submit('UPI');" class="btn btn-danger">Pay&nbsp;Rs.<span id="walletAmount2"></span></a>
+  
+  
+  </div>
+  
+    <div id="WalletPayment3" style="display:none">
+    
+  <span><a href="javascript:Submit('Wallet');" class="btn btn-danger">Confirm</a></span>
+  
+  
+  </div>
+  <div align="right" style="display:none" id="dvWalletConfirmLoadStatus">Processing ..<img src="images/loading.gif" width="35" height="8" border="0">&nbsp;</div>
+                    </div></center>
+                    <div class="top-buffer"></div>
+                </div>
+                
+                <!-- UPI PAYMENTS -->
+                <!-- Net Banking -->
+                <div class="bhoechie-tab-content">
+                    <center>
+                     
+                     
+                      <h2 style="margin-top: 0;color:#55518a">All Netbanking is available</h2>
+                      
+                       <div class="form-group" style="display:none">
+    <label for="exampleFormControlSelect1">Select Bank</label>
+    <select name="selectNetBankingPayment" class="form-control" id="exampleFormControlSelect2" style="width: 300px">
+                                           <option value="">--</option>
+                                           <option value="175">BILL&nbsp;DESK&nbsp;GATEWAY</option>
+                                           <option value="721">AGGRE PAY</option>                                         
+                                </select></div>
+                                
+ <div align="left" style="color:#007bff;font-weight:bold;font-size:16px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" width="20" height="20" style="vertical-align:middle;margin-right:6px;">
+    Consent: Booking details via SMS / WhatsApp
+</div>
+  
+  <div class="msgBlock">
+
+    <div class="slider-container" onclick="toggleSlider(this,'SMS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>SMS</b></span> 
+
+    <div class="slider-container checked" onclick="toggleSlider(this,'WS')">
+        <div class="slider"></div>
+    </div>
+    <span class="text-1" style="margin-left:-20px;"><b>WhatsApp</b></span>
+
+</div>      
+       
+                                
+<div style="font-size:13px;">
+    <input type="checkbox" id="acceptRules_NET" name="acceptRules" required="" onclick="openConsentModal_NET();" style="">
+    I have read and I accept all the communication rules mentioned above.
+    I confirm that my mobile number is correct and I am ready to receive
+    automated alerts via SMS and/or WhatsApp.
+</div>
+  
+  <div id="orignal2">
+   
+  <a href="javascript:Submit('Net');" class="btn btn-danger">Pay&nbsp;Rs.70.00</a>
+  
+  
+  
+  </div>
+  
+  <div id="wallet2" style="display:none">
+   
+  <a href="javascript:Submit('Net');" class="btn btn-danger">Pay&nbsp;Rs.<span id="walletAmount2"></span></a>
+  
+  
+  </div>
+  
+    <div id="WalletPayment2" style="display:none">
+    
+  <span><a href="javascript:Submit('Wallet');" class="btn btn-danger">Confirm</a></span>
+  
+  
+  </div>
+  <div align="right" style="display:none" id="dvWalletConfirmLoadStatus">Processing ..<img src="images/loading.gif" width="35" height="8" border="0">&nbsp;</div>
+                    </center>
+                    <div class="top-buffer"></div>
+                </div>
+    
+               
+                
+                
+                <!-- Wallet -->
+                <div class="bhoechie-tab-content active" id="WalletPaymentNew2" style="display:none">
+                    <center>
+                      
+                      <h2 style="margin-top: 0;color:#55518a">GSRTC Wallet</h2>
+                      <h4>Book through Wallet </h4>
+                      <div class="form-group">&nbsp;</div>
+  <div>
+    
+  <span><a href="javascript:Submit('Wallet');" class="btn btn-danger">Confirm</a></span>
+  
+  
+  </div>
+
+  <div align="right" style="display:none" id="dvWalletConfirmLoadStatus">Processing ..<img src="images/loading.gif" width="35" height="8" border="0">&nbsp;</div>
+  
+  
+  
+                    </center>
+                    <div class="top-buffer"></div>
+                </div>
+                
+            </div>
+        </div>
+  </div>
+</div>
+   
+<!-- New Tabs End VEN  ********************************************************************************************************************************     -->
+   
+  <div id="consentModal" class="modal-overlay">
+    <div class="modal-card consent-highlight">
+
+        <!-- Header -->
+        <div class="modal-header">
+            <span class="modal-title"><b>Notification Consent</b></span>
+            <!-- <span class="modal-close" onclick="closeConsentModal()">×</span> -->
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+            <div class="consent-box">
+                <ul class="consent-list">
+                    <li>
+                        You will receive your e-Ticket, PNR status, travel alerts,
+                        booking confirmation, cancellation updates, and other related
+                        information through SMS and/or WhatsApp on your registered
+                        mobile number.
+                    </li>
+                    <li>
+                        You confirm that the mobile number provided is correct and
+                        belongs to you or a travelling passenger, and you are
+                        authorized to use this number for this booking.
+                    </li>
+                    <li>
+                        You allow GSRTC to send these messages even if your number
+                        is registered under the Do Not Call (DNC) registry.
+                    </li>
+                    <li>
+                        Message delivery depends on network availability and GSRTC
+                        is not responsible for delays or non-delivery due to
+                        technical issues.
+                    </li>
+                    <li>
+                        Do not share your PNR or OTP with anyone. GSRTC never asks
+                        for bank or card details through SMS or WhatsApp.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+            <button type="button" class="btn-close" onclick="closeConsentModal()">
+                Close
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<style>
+.consent-highlight {
+    border-left:6px solid #2f80ed;
+}
+
+.consent-box {
+    background:#f8fbff;
+    border:1px solid #d6e4ff;
+    border-radius:6px;
+    padding:14px 18px;
+}
+
+.consent-list {
+    padding-left:18px;
+    margin:0;
+}
+
+.consent-list li {
+    margin-bottom:12px;
+    font-size:13px;
+    line-height:1.6;
+}
+.modal-overlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    z-index:2000;
+}
+
+.modal-card {
+    background:#ffffff;
+    width:650px;
+    max-width:92%;
+    margin:8% auto;
+    border-radius:8px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.3);
+    animation:fadeIn 0.25s ease-in-out;
+}
+
+.modal-header {
+    padding:14px 18px;
+    background:#f3f6f9;
+    border-bottom:1px solid #ddd;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.modal-title {
+    font-size:16px;
+    font-weight:600;
+    color:#333;
+}
+
+.modal-close {
+    font-size:22px;
+    cursor:pointer;
+    color:#666;
+}
+
+.modal-close:hover {
+    color:#000;
+}
+
+.modal-body {
+    padding:18px 22px;
+    font-size:13px;
+    line-height:1.6;
+    max-height:340px;
+    overflow-y:auto;
+}
+
+.consent-list {
+    padding-left:18px;
+}
+
+.consent-list li {
+    margin-bottom:10px;
+}
+
+.modal-footer {
+    padding:12px 18px;
+    border-top:1px solid #ddd;
+    text-align:right;
+    background:#fafafa;
+}
+
+.btn-close {
+    padding:6px 16px;
+    border:1px solid #999;
+    background:#fff;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+.btn-close:hover {
+    background:#eaeaea;
+}
+
+@keyframes fadeIn {
+    from { opacity:0; transform:translateY(-10px); }
+    to { opacity:1; transform:translateY(0); }
+}
+</style>
+   
+   
+      
+  </div>
+  <div class="col-sm-4">
+    <div class="well">
+       
+      
+      <h4>Summary Info</h4>
+      
+      
+      <hr>
+         <div class="row" style="margin-left: -20px; font-size: 12px;">
+         
+         <div class="col-md-7">
+                
+            </div>
+            <div class="col-md-3 text-danger pageHeader">
+      
+      
+               One Way
+               
+               
+            </div>
+             
+             <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+                
+                
+                BASIC FARE
+                
+                
+            </div>
+            <div class="col-md-3" align="right">
+              63.00
+            </div>
+             
+             <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+                 
+                
+                RESERVATION FEE
+                
+            </div>
+            <div class="col-md-3" align="right">
+                5.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+                
+                
+                ACCIDENT INSC CHARGES
+                
+            </div>
+            <div class="col-md-3" align="right">
+              0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+              
+                
+                TOLL FEE
+                
+            </div>
+            <div class="col-md-3" align="right">
+                0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+               
+                
+                TOLL FEE RAJASTHAN
+                
+            </div>
+            <div class="col-md-3" align="right">
+               0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+               
+               
+               SERVICE CHARGE
+               
+               
+            </div>
+            <div class="col-md-3" align="right">
+             0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+           
+            <div class="col-md-7">
+               
+               
+               OTHER LEVIES
+               
+               
+            </div>
+            <div class="col-md-3" align="right">
+               0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+               
+               
+               GST
+               
+               
+            </div>
+            <div class="col-md-3" align="right">
+              3.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+               
+               
+               CONCESSIONS
+              
+            </div>
+            <div class="col-md-3" align="right">
+               0.00
+            </div>
+             
+            <div class="top-bufferRt"></div>
+            <div class="col-md-7">
+             
+             
+               DISCOUNTS
+               
+               
+            </div>
+            <div class="col-md-3" align="right">
+                1.00
+            </div>
+             
+            <br>
+             <hr>
+             <div class="col-md-7 text-danger pageHeader">
+               
+               
+               TOTAL
+               
+               
+            </div>
+            
+            <div class="col-md-3 text-danger pageHeader" align="right">
+                RS. 70.00
+            </div>
+              
+        </div>
+      
+   
+   
+   
+    </div>
+    
+  </div>
+  
+  <!-- Right Boc 2 Venky 12/08/2019 Start ********************************************* -->
+
+<div class="col-sm-4">
+
+    <div class="well">
+
+      <h4>GSRTC Wallet Account Details</h4>     
+      <hr>
+            <div class="row">
+                 <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Account No.:
+                 </div>
+                 <div class="col-sm-8" style=" text-align:right; font-size: 15px;">
+                  <input type="text" class="form-control " id="Account No" placeholder="GJEWA1332996" disabled="true" style="">
+                 </div>
+                <div class="top-bufferRt"></div><br>
+                  <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Balance:
+                 </div>
+                 <div class="col-sm-8" style="">
+                   <input type="text" class="form-control " id="Account No" placeholder="0.00" disabled="true" style="">
+                 </div>
+                 
+                  <div class="top-bufferRt"></div><br>
+                  <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Redeem Amount:
+                 </div>
+                 <div class="col-sm-8" style="">
+                   <input type="text" class="form-control " name="hiddenRedemWalletAmt" id="hiddenRedemWalletAmt" value="0.00" disabled="true" style="">
+                 </div>
+                 
+                 <div class="top-bufferRt"></div>
+                 <div class="col-sm-10" style=" font-size: 12px;">
+                 
+                 
+                   </div>
+                   <br>
+                   <label for="exampleFormControlSelect1" id="otp1" style="display:none">Enter OTP sent to Mobile No : <b>9924513876</b></label>
+                   <br>
+                   <div id="otp2" style="display:none"><input type="text" name="txtOneTimePassword" id="txtOneTimePassword" onkeyup="validateOTP();" class="form-control" style="width: 70px;" maxlength="6">
+                   &nbsp;<span id="validateMobileNo1"></span>&nbsp;<span id="validateMobileNo" class="validationMessage"></span>
+                   </div>
+                   <h4>GSRTC Wallet Account Summary</h4>
+                    <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Credit Amount:
+                 </div>
+                 <div class="col-sm-8" style="">
+                  0.00
+                 </div>
+                <div class="top-bufferRt"></div><br>
+                  <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Debit Amount:
+                 </div>
+                 <div class="col-sm-8" style="">
+                   0.00
+                 </div>
+                 
+                  <div class="top-bufferRt"></div><br>
+                  <div class="col-sm-4 text-danger pageHeader" style="padding-right: 2px; color:#990000">
+                   Balance:
+                 </div>
+                 <div class="col-sm-8" style="">
+                   0.00
+                 </div>
+                    
+           </div>
+      </div>
+</div>
+</div>
+<!-- Right Boc 2 Venky 12/08/2019 End ********************************************************-->
+</div>
+<hr>
+
+<!-- Ven End -->
+<footer class="container-fluid text-center">
+  <p>GSRTC All Rights Reserved </p>
+</footer>
+
+<input type="hidden" name="hiddenJourneyType" value="O" style="">
+<input type="hidden" name="hiddenRedemWalletAmt" value="" style="">
+<input type="hidden" name="hiddenAction" value="GetAjaxFareDetailsOnward" style="">
+<input type="hidden" name="radGatewayType" value="IciciCredit" style="">
+<input type="hidden" name="walletBooking" value="" style="">        
+<input type="hidden" name="isWalletSelected" value="" style="">     
+<input type="hidden" name="hiddenWalletCheckBox" value="" style="">     
+<input type="hidden" name="hiddenWalletPGAmount" value="" style="">  
+<input type="hidden" name="VIASMS" value="WS" style="">
+
+<input type="hidden" name="nsSelectedBar" value="WS" style="">
+<input type="hidden" name="wsSelectedBar" value="WS" style="">  
+
+</form>
+
+
+</body></html>
