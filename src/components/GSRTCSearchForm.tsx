@@ -321,7 +321,6 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
                   selected={date}
                   onSelect={setDate}
                   disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>

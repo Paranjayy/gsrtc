@@ -159,7 +159,7 @@ export default function GSRTCBusList({
           <p className="text-xs text-muted-foreground">Date of Journey: {date}</p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={filterClass} onValueChange={setFilterClass}>
+          <Select value={filterClass} onValueChange={(val) => setFilterClass(val || 'All')}>
             <SelectTrigger className="w-[160px] h-8 text-xs bg-background">
               <SelectValue placeholder="Bus Type" />
             </SelectTrigger>
