@@ -27,7 +27,7 @@ function parseBusHTML(htmlContent: string) {
     let duration = durationMatch ? durationMatch[1].trim() : '';
 
     // Extract Fare
-    const fareMatch = rowHtml.match(/class="WebRupee"[^>]*>₹([^<]+)<\/span>/i);
+    const fareMatch = rowHtml.match(/class="WebRupee"[^>]*>(?:&#x20B9;|₹|Rs\.?|INR|<[^>]+>)*\s*([\d.,]+)/i) || rowHtml.match(/class="fare[^"]*"[^>]*>(?:&#x20B9;|₹|Rs\.?|INR|<[^>]+>)*\s*([\d.,]+)/i);
     const fare = fareMatch ? parseFloat(fareMatch[1].replace(/,/g, '').trim()) : 0;
 
     // Extract Seat Info and Service ID
