@@ -34,15 +34,20 @@ function parseSeatsHTML(htmlContent: string): any[] {
           
           // Clean up seat number
           seatNo = seatNo.replace(/\s+/g, '');
+          const rowcolMatch = cellHtml.match(/['"]([A-Z0-9]+-[A-Z]*\d+)['"]/i);
+          const rowcol = rowcolMatch ? rowcolMatch[1] : '';
           
-          seats.push({
-            seatNo,
-            isBooked,
-            isLadies,
-            type,
-            row: rowIdx,
-            col: i
-          });
+          if (seatNo) {
+            seats.push({
+              seatNo,
+              isBooked,
+              isLadies,
+              type,
+              rowcol,
+              row: rowIdx,
+              col: i
+            });
+          }
         }
       });
     }

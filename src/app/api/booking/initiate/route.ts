@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       checkoutParams.append(`passAge${i}`, p.age.toString());
       checkoutParams.append(`selectGender${i}`, p.gender);
       checkoutParams.append(`selectConcession${i}`, '0');
-      checkoutParams.append(`checkSeatNo${i}`, p.seatNo);
+      checkoutParams.append(`checkSeatNo${i}`, p.rowcol || p.seatNo);
       checkoutParams.append(`checkSeatType${i}`, p.type || 'Seat');
       
       checkoutParams.append(`selectPickupPoint${i}`, boardingPoint || '');
