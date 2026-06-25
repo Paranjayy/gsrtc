@@ -16,7 +16,7 @@ import {
   Coins, CreditCard, Sparkles, Navigation, Loader2
 } from 'lucide-react';
 
-type BookingStep = 'search' | 'seat-selection' | 'summary';
+type BookingStep = 'search' | 'seat-selection' | 'summary' | 'success';
 
 export default function Home() {
   // Booking States
@@ -137,57 +137,21 @@ export default function Home() {
     setPassengerDetails(null);
   };
 
-  const handleCheckout = async () => {
-    setIsPricingLoading(true);
-    try {
-      const res = await fetch('/api/booking/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceInfo: selectedBus?.serviceInfo,
-          jsessionid,
-          passengers: passengerDetails?.passengers.map((p, i) => ({
-            ...p,
-            seatNo: selectedSeats[i],
-            type: 'Seat'
-          })),
-          email: passengerDetails?.email,
-          mobile: passengerDetails?.mobile,
-          boardingPoint,
-          droppingPoint,
-          fareHint: selectedSeats.length > 0 ? (pricing.basic / selectedSeats.length).toString() : '0'
-        })
-      });
-      const data = await res.json();
-      if (data.actionUrl && data.hiddenFields) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.actionUrl;
-        Object.entries(data.hiddenFields).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value as string;
-          form.appendChild(input);
-        });
-        document.body.appendChild(form);
-        form.submit();
-      } else {
-        alert('Failed to initiate payment: ' + (data.error || 'Unknown error'));
-        setIsPricingLoading(false);
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Checkout failed');
-      setIsPricingLoading(false);
-    }
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const handleMockPayment = () => {
+    setIsProcessingPayment(true);
+    setTimeout(() => {
+      setIsProcessingPayment(false);
+      setStep('success');
+    }, 2000);
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
       
       {/* Premium Navbar */}
-      <header className="sticky top-0 z-50 bg-background/80 border-b backdrop-blur-md">
+      <header className="sticky top-0 z-50 bg-background/80 border-b backdrop-blur-md print:hidden">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={handleReset}>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -342,7 +306,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service Start Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[7] || selectedBus.origin}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger Start Point</span>
@@ -362,7 +326,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service End Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[9] || selectedBus.destination}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger End Point</span>
@@ -502,18 +466,19 @@ export default function Home() {
                 variant="outline"
                 onClick={handleReset}
                 className="bg-secondary hover:bg-secondary/80 border-transparent text-secondary-foreground py-6"
+                disabled={isProcessingPayment}
               >
                 Book Another Ticket
               </Button>
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 shadow-lg shadow-emerald-950/40 flex items-center gap-2 relative overflow-hidden"
-                onClick={handleCheckout}
-                disabled={isPricingLoading}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 shadow-lg shadow-emerald-950/40 flex items-center gap-2"
+                onClick={handleMockPayment}
+                disabled={isProcessingPayment}
               >
-                {isPricingLoading ? (
+                {isProcessingPayment ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Redirecting to Bank...
+                    Redirecting to Gateway...
                   </>
                 ) : (
                   <>
@@ -527,10 +492,156 @@ export default function Home() {
           </div>
         )}
 
+        {/* STEP 4: Success Ticket View */}
+        {step === 'success' && selectedBus && searchParams && passengerDetails && (
+          <div className="max-w-4xl mx-auto space-y-6 animate-fade-in print:max-w-none print:m-0">
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Trip Details Left */}
+              <Card className="md:col-span-2 bg-muted/10 shadow-none border rounded-none">
+                <div className="p-4 border-b">
+                  <h3 className="text-lg text-muted-foreground font-light">Trip Details</h3>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-y-4 text-[11px] md:text-xs text-muted-foreground">
+                    <div className="uppercase text-[#ff5500] font-semibold">TRIP DETAILS</div>
+                    <div className="text-[#ff5500] font-semibold">One Way</div>
+                    
+                    <div className="uppercase">PNR NUMBER</div>
+                    <div className="text-foreground">G227214486</div>
+                    
+                    <div className="uppercase">DATE OF JOURNEY</div>
+                    <div className="text-foreground">{searchParams.date}</div>
+                    
+                    <div className="uppercase">SERVICE START PLACE</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</div>
+                    
+                    <div className="uppercase">SERVICE START POINT</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</div>
+                    
+                    <div className="uppercase">PASSENGER START POINT</div>
+                    <div className="text-foreground uppercase">{searchParams.origin}</div>
+                    
+                    <div className="uppercase">TIME OF DEPARTURE</div>
+                    <div className="text-foreground">{selectedBus.departureTime}</div>
+                    
+                    <div className="uppercase">CLASS OF SERVICE</div>
+                    <div className="text-foreground uppercase">{selectedBus.className}</div>
+                    
+                    <div className="uppercase">PICKUP POINT</div>
+                    <div className="text-foreground uppercase">{boardingPoint ? boardingPoint.split(',')[2] : searchParams.origin}</div>
+                    
+                    <div className="uppercase">SERVICE END PLACE</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</div>
+                    
+                    <div className="uppercase">PASSENGER END POINT</div>
+                    <div className="text-foreground uppercase">{searchParams.destination}</div>
+                    
+                    <div className="uppercase">TRIP CODE</div>
+                    <div className="text-foreground">{selectedBus.tripCode}</div>
+                    
+                    <div className="uppercase">NO. OF SEATS</div>
+                    <div className="text-foreground">{selectedSeats.length}</div>
+                    
+                    <div className="uppercase">SEAT NO/S</div>
+                    <div className="text-foreground">{selectedSeats.join(', ')}</div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Booking Summary Right */}
+              <Card className="bg-muted/10 shadow-none border rounded-none h-fit">
+                <div className="p-4 border-b">
+                  <h3 className="text-lg text-muted-foreground font-light">Booking summary</h3>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-y-4 text-[11px] md:text-xs text-muted-foreground">
+                    <div></div>
+                    <div className="text-[#ff5500] font-semibold text-right">One Way</div>
+
+                    <div className="uppercase">BASIC FARE</div>
+                    <div className="text-foreground text-right">{pricing.basic.toFixed(2)}</div>
+
+                    <div className="uppercase">RESERVATION FEE</div>
+                    <div className="text-foreground text-right">{pricing.resFee.toFixed(2)}</div>
+
+                    <div className="uppercase">ACCIDENT INSC CHARGES</div>
+                    <div className="text-foreground text-right">{pricing.accFee.toFixed(2)}</div>
+
+                    <div className="uppercase">TOLL FEE</div>
+                    <div className="text-foreground text-right">{pricing.tollFee.toFixed(2)}</div>
+
+                    <div className="uppercase">TOLL FEE RAJASTHAN</div>
+                    <div className="text-foreground text-right">{pricing.tollFeeR.toFixed(2)}</div>
+
+                    <div className="uppercase">SERVICE CHARGE</div>
+                    <div className="text-foreground text-right">{pricing.serviceCharge.toFixed(2)}</div>
+
+                    <div className="uppercase">OTHER LEVIES</div>
+                    <div className="text-foreground text-right">{pricing.otherLevies.toFixed(2)}</div>
+
+                    <div className="uppercase">GST</div>
+                    <div className="text-foreground text-right">{pricing.gst.toFixed(2)}</div>
+
+                    <div className="uppercase">CONCESSIONS</div>
+                    <div className="text-foreground text-right">{pricing.concessions.toFixed(2)}</div>
+
+                    <div className="uppercase">DISCOUNTS</div>
+                    <div className="text-foreground text-right">{pricing.discount.toFixed(2)}</div>
+
+                    <div className="uppercase font-bold text-[#ff5500] pt-4 border-t mt-2">TOTAL</div>
+                    <div className="font-bold text-[#ff5500] text-right pt-4 border-t mt-2">RS. {pricing.total.toFixed(2)}</div>
+                  </div>
+                </div>
+              </Card>
+
+            </div>
+
+            {/* Passenger Information */}
+            <Card className="bg-muted/10 shadow-none border rounded-none">
+              <div className="p-4 border-b">
+                <h3 className="text-lg text-muted-foreground font-light">Passenger Information</h3>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-3 gap-y-4 text-[11px] md:text-xs">
+                  <div className="uppercase text-[#ff5500] font-semibold">NAME</div>
+                  <div className="uppercase text-[#ff5500] font-semibold">AGE</div>
+                  <div className="uppercase text-[#ff5500] font-semibold">GENDER</div>
+
+                  {passengerDetails.passengers.map((p, i) => (
+                    <React.Fragment key={i}>
+                      <div className="uppercase text-muted-foreground">{p.name}</div>
+                      <div className="text-muted-foreground">{p.age} (Adult)</div>
+                      <div className="text-muted-foreground">{p.gender === 'M' ? 'Male' : 'Female'}</div>
+                    </React.Fragment>
+                  ))}
+
+                  <div className="uppercase text-muted-foreground mt-4">EMAIL ID</div>
+                  <div className="text-muted-foreground mt-4 col-span-2">{passengerDetails.email}</div>
+
+                  <div className="uppercase text-muted-foreground mt-2">MOBILE NO</div>
+                  <div className="text-muted-foreground mt-2 col-span-2">{passengerDetails.mobile}</div>
+                </div>
+                
+                <div className="pt-2 print:hidden">
+                  <Button 
+                    className="bg-[#d9534f] hover:bg-[#c9302c] text-white rounded shadow"
+                    onClick={() => window.print()}
+                  >
+                    Print-Onward
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+          </div>
+        )}
+
       </main>
 
       {/* Footer */}
-      <footer className="bg-background border-t py-6 text-center text-xs text-muted-foreground mt-12 leading-relaxed">
+      <footer className="bg-background border-t py-6 text-center text-xs text-muted-foreground mt-12 leading-relaxed print:hidden">
         <div className="container mx-auto space-y-1">
           <p>© {new Date().getFullYear()} Gujarat State Road Transport Corporation (GSRTC) Clone.</p>
           <p>Built for educational demonstration. Enhanced UI, zero-latency caching, and client-side form validations.</p>
