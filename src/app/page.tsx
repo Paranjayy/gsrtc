@@ -288,10 +288,6 @@ export default function Home() {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Trip Details</h3>
                 <div className="grid grid-cols-2 gap-y-3.5 gap-x-6 text-sm">
                   <div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Journey Route</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{selectedBus.origin} to {selectedBus.destination}</span>
-                  </div>
-                  <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Date of Journey</span>
                     <span className="font-semibold text-foreground mt-0.5 block flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-primary" />
@@ -299,20 +295,44 @@ export default function Home() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Departure Time</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service Start Place</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger Start Point</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{searchParams.origin}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Time of Departure</span>
                     <span className="font-semibold text-foreground mt-0.5 block">{selectedBus.departureTime}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Bus Category</span>
-                    <span className="font-semibold text-foreground mt-0.5 block">{selectedBus.className}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Class of Service</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.className}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Seat Numbers</span>
-                    <span className="font-semibold text-foreground mt-0.5 block font-mono text-primary">{selectedSeats.join(', ')}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Pickup Point</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{boardingPoint ? boardingPoint.split(',')[2] : searchParams.origin}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service End Place</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger End Point</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{searchParams.destination}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Trip Code</span>
                     <span className="font-semibold text-foreground mt-0.5 block font-mono">{selectedBus.tripCode}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">No. of Seats</span>
+                    <span className="font-semibold text-foreground mt-0.5 block">{selectedSeats.length}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">Seat No/s</span>
+                    <span className="font-semibold text-foreground mt-0.5 block font-mono text-primary">{selectedSeats.join(', ')}</span>
                   </div>
                 </div>
               </div>
@@ -436,15 +456,59 @@ export default function Home() {
                 variant="outline"
                 onClick={handleReset}
                 className="bg-secondary hover:bg-secondary/80 border-transparent text-secondary-foreground py-6"
+                disabled={isPricingLoading}
               >
                 Book Another Ticket
               </Button>
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 shadow-lg shadow-emerald-950/40 flex items-center gap-2"
-                onClick={() => alert('Redirecting to payment gateway... (Mock Checkout)')}
+                onClick={async () => {
+                  setIsPricingLoading(true);
+                  try {
+                    const res = await fetch('/api/booking/initiate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        serviceInfo: selectedBus.serviceInfo,
+                        jsessionid,
+                        seatNo: selectedSeats.join(','),
+                        passengerDetails,
+                        boardingPoint,
+                        droppingPoint
+                      })
+                    });
+                    
+                    const data = await res.json();
+                    if (data.actionUrl && data.hiddenFields) {
+                      // Dynamically create a form and submit it
+                      const form = document.createElement('form');
+                      form.method = 'POST';
+                      form.action = data.actionUrl;
+                      
+                      for (const [key, value] of Object.entries(data.hiddenFields)) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value as string;
+                        form.appendChild(input);
+                      }
+                      
+                      document.body.appendChild(form);
+                      form.submit();
+                    } else {
+                      alert('Failed to initiate payment. Please try again.');
+                      setIsPricingLoading(false);
+                    }
+                  } catch (e) {
+                    console.error('Payment initiation error', e);
+                    alert('An error occurred while connecting to the payment gateway.');
+                    setIsPricingLoading(false);
+                  }
+                }}
+                disabled={isPricingLoading}
               >
-                <CreditCard className="w-4 h-4" />
-                Proceed to Payment
+                {isPricingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                {isPricingLoading ? 'Processing...' : 'Proceed to Payment'}
               </Button>
             </div>
 
