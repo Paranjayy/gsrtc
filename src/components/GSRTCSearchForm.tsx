@@ -232,7 +232,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
               <ul className="absolute z-50 w-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto divide-y divide-border">
                 {originSuggestions.map((item, idx) => (
                   <li
-                    key={item.id}
+                    key={`${item.id}-${idx}`}
                     onClick={() => {
                       setSelectedOrigin(item);
                       setOriginInput(`${item.name} (${item.code})`);
@@ -286,7 +286,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
               <ul className="absolute z-50 w-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto divide-y divide-border">
                 {destSuggestions.map((item, idx) => (
                   <li
-                    key={item.id}
+                    key={`${item.id}-${idx}`}
                     onClick={() => {
                       setSelectedDest(item);
                       setDestInput(`${item.name} (${item.code})`);
