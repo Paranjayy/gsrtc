@@ -26,12 +26,16 @@ export default function GSRTCPassengerForm({
   selectedSeats,
   onSubmit
 }: PassengerFormProps) {
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('gidayajuvendrasinh@gmail.com');
+  const [mobile, setMobile] = useState('8469685882');
   
   // Create an array of passenger details state matching selectedSeatsCount
   const [passengerDetails, setPassengerDetails] = useState<Array<{ name: string; age: string; gender: 'M' | 'F' }>>(
-    Array.from({ length: selectedSeatsCount || 1 }, () => ({ name: '', age: '', gender: 'M' }))
+    Array.from({ length: selectedSeatsCount || 1 }, (_, i) => 
+      i === 0 
+        ? { name: 'Yajuvendrasinh', age: '28', gender: 'M' } 
+        : { name: '', age: '', gender: 'M' }
+    )
   );
 
   // Sync inputs if seat selection changes count

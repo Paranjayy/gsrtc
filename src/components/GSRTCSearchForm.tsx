@@ -59,7 +59,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
 
   // Debounced autocomplete for Origin
   useEffect(() => {
-    if (selectedOrigin && originInput === `${selectedOrigin.name} (${selectedOrigin.code})`) {
+    if (selectedOrigin && originInput === selectedOrigin.name) {
       return;
     }
     const trimmed = originInput.trim();
@@ -76,7 +76,14 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
         if (res.ok) {
           const data = await res.json();
           setOriginSuggestions(data);
-          setShowOriginList(data.length > 0);
+          
+          const exactMatch = data.find((s: Station) => s.name.toLowerCase() === trimmed.toLowerCase());
+          if (exactMatch) {
+            setSelectedOrigin(exactMatch);
+            setShowOriginList(false);
+          } else {
+            setShowOriginList(data.length > 0);
+          }
         }
       } catch (err) {
         console.error('Error fetching origin stations:', err);
@@ -90,7 +97,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
 
   // Debounced autocomplete for Destination
   useEffect(() => {
-    if (selectedDest && destInput === `${selectedDest.name} (${selectedDest.code})`) {
+    if (selectedDest && destInput === selectedDest.name) {
       return;
     }
     const trimmed = destInput.trim();
@@ -107,7 +114,14 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
         if (res.ok) {
           const data = await res.json();
           setDestSuggestions(data);
-          setShowDestList(data.length > 0);
+          
+          const exactMatch = data.find((s: Station) => s.name.toLowerCase() === trimmed.toLowerCase());
+          if (exactMatch) {
+            setSelectedDest(exactMatch);
+            setShowDestList(false);
+          } else {
+            setShowDestList(data.length > 0);
+          }
         }
       } catch (err) {
         console.error('Error fetching dest stations:', err);
@@ -122,19 +136,13 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
   const handleOriginChange = (val: string) => {
     setOriginInput(val);
     setOriginFocusedIndex(-1);
-    // If user clears the text, clear the selection state
-    if (!val.trim()) {
-      setSelectedOrigin(null);
-    }
+    setSelectedOrigin(null);
   };
 
   const handleDestChange = (val: string) => {
     setDestInput(val);
     setDestFocusedIndex(-1);
-    // If user clears the text, clear the selection state
-    if (!val.trim()) {
-      setSelectedDest(null);
-    }
+    setSelectedDest(null);
   };
 
   const handleOriginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -151,7 +159,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
         e.preventDefault();
         const item = originSuggestions[originFocusedIndex];
         setSelectedOrigin(item);
-        setOriginInput(`${item.name} (${item.code})`);
+        setOriginInput(item.name);
         setShowOriginList(false);
       }
     } else if (e.key === 'Escape') {
@@ -173,7 +181,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
         e.preventDefault();
         const item = destSuggestions[destFocusedIndex];
         setSelectedDest(item);
-        setDestInput(`${item.name} (${item.code})`);
+        setDestInput(item.name);
         setShowDestList(false);
       }
     } else if (e.key === 'Escape') {
@@ -235,7 +243,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
                     key={`${item.id}-${idx}`}
                     onClick={() => {
                       setSelectedOrigin(item);
-                      setOriginInput(`${item.name} (${item.code})`);
+                      setOriginInput(item.name);
                       setShowOriginList(false);
                     }}
                     className={`px-4 py-2.5 cursor-pointer text-sm flex justify-between ${
@@ -289,7 +297,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
                     key={`${item.id}-${idx}`}
                     onClick={() => {
                       setSelectedDest(item);
-                      setDestInput(`${item.name} (${item.code})`);
+                      setDestInput(item.name);
                       setShowDestList(false);
                     }}
                     className={`px-4 py-2.5 cursor-pointer text-sm flex justify-between ${
