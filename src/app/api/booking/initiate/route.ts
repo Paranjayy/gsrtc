@@ -4,77 +4,105 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-      serviceInfo, jsessionid, seatNo, passengerDetails, 
-      boardingPoint, droppingPoint, payMethod = 'ICICI', sendSms = 'WhatsApp'
+      serviceInfo, jsessionid, 
+      passengers, email, mobile,
+      boardingPoint, droppingPoint,
+      fareHint
     } = body;
 
-    if (!serviceInfo || !jsessionid || !seatNo || !passengerDetails) {
+    if (!serviceInfo || !jsessionid || !passengers || !passengers.length) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const bookParams = new URLSearchParams();
-    bookParams.append('Submit', 'passengerDetails');
-    bookParams.append('radOnwardServiceID', serviceInfo);
-    bookParams.append('forwardid', seatNo);
-    
-    // We only support 1 passenger for this MVP, but passengerDetails.passengers is an array
-    const passenger = passengerDetails.passengers[0];
-    bookParams.append('passengerName', passenger.name);
-    bookParams.append('passengerAge', passenger.age.toString());
-    bookParams.append('passengerGender', passenger.gender);
-    bookParams.append('passengerConcession', '14'); // General Public ID
-    bookParams.append('concessions', '0.0');
-    
-    bookParams.append('boardingPoint', boardingPoint || '43,00:00,null');
-    bookParams.append('droppingPoint', droppingPoint || '81,00:00,null');
-    bookParams.append('mobileNo', passengerDetails.mobile);
-    bookParams.append('email', passengerDetails.email);
-    bookParams.append('agreePolicy', 'on');
-    bookParams.append('payMethod', payMethod);
-    bookParams.append('sendSms', sendSms);
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': '*/*',
       'Cookie': `JSESSIONID=${jsessionid}`
     };
 
-    const res = await fetch('https://gsrtc.in/OPRSOnline/advanceBooking.do', {
-      method: 'POST',
-      headers,
-      body: bookParams.toString()
+    // Step 1: Submit passenger details to lock seats
+    const checkoutParams = new URLSearchParams();
+    checkoutParams.append('Submit', 'passengerDetails');
+    checkoutParams.append('txtHints' + serviceInfo.split(',')[0], fareHint || '0');
+    
+    passengers.forEach((p: any, i: number) => {
+      checkoutParams.append(`passName${i}`, p.name);
+      checkoutParams.append(`passAge${i}`, p.age.toString());
+      checkoutParams.append(`selectGender${i}`, p.gender);
+      checkoutParams.append(`selectConcession${i}`, '0');
+      checkoutParams.append(`checkSeatNo${i}`, p.seatNo);
+      checkoutParams.append(`checkSeatType${i}`, p.type || 'Seat');
+      
+      checkoutParams.append(`selectPickupPoint${i}`, boardingPoint || '');
+      checkoutParams.append(`selectDropOffPoint${i}`, droppingPoint || '');
     });
 
-    if (!res.ok) {
-      throw new Error(`GSRTC advanceBooking.do returned status ${res.status}`);
+    checkoutParams.append('mobileNo', mobile);
+    checkoutParams.append('email', email);
+
+    console.log("Submitting passenger details...", checkoutParams.toString());
+
+    const checkoutRes = await fetch('https://gsrtc.in/OPRSOnline/advanceBooking.do?Submit=passengerDetails', {
+      method: 'POST',
+      headers,
+      body: checkoutParams.toString()
+    });
+
+    if (!checkoutRes.ok) {
+      throw new Error(`GSRTC passenger details submission failed with status ${checkoutRes.status}`);
     }
 
-    const htmlText = await res.text();
-    
-    // Extract PG URL and hidden form fields
-    const formRegex = /<form[^>]*action="([^"]+)"[^>]*name="frmPayment"[^>]*>([\s\S]*?)<\/form>/i;
-    const formMatch = htmlText.match(formRegex);
-    
-    if (!formMatch) {
-      return NextResponse.json({ error: 'Failed to extract payment form from GSRTC response' }, { status: 500 });
+    // Step 2: Request the PG Redirect Form (ICICI)
+    const iciciParams = new URLSearchParams();
+    iciciParams.append('Submit', 'pgRequest');
+    iciciParams.append('payMethod', 'ICICI');
+    iciciParams.append('sendSms', 'WhatsApp');
+    iciciParams.append('termsChk', 'on');
+
+    console.log("Requesting PG redirect form...");
+
+    const pgRes = await fetch('https://gsrtc.in/OPRSOnline/advanceBooking.do', {
+      method: 'POST',
+      headers,
+      body: iciciParams.toString()
+    });
+
+    if (!pgRes.ok) {
+      throw new Error(`GSRTC PG request failed with status ${pgRes.status}`);
     }
-    
+
+    const pgHtml = await pgRes.text();
+
+    // The pgHtml should contain a form like <form name="ecom" method="post" action="https://eazypay.icicibank.com/...">
+    // We will extract the form action and all hidden inputs
+    const formRegex = /<form[^>]+action="([^"]+)"[^>]*>([\s\S]*?)<\/form>/i;
+    const formMatch = pgHtml.match(formRegex);
+
+    if (!formMatch) {
+      console.log(pgHtml.substring(0, 500));
+      return NextResponse.json({ error: 'Failed to extract payment gateway form from GSRTC response' }, { status: 500 });
+    }
+
     const actionUrl = formMatch[1];
-    const formInputsHtml = formMatch[2];
-    
-    const inputRegex = /<input[^>]+name="([^"]+)"[^>]+value="([^"]*)"[^>]*>/gi;
+    const inputsHtml = formMatch[2];
+
+    const inputRegex = /<input[^>]+type="hidden"[^>]+name="([^"]+)"[^>]+value="([^"]*)"[^>]*>/gi;
     const hiddenFields: Record<string, string> = {};
+    
     let match;
-    while ((match = inputRegex.exec(formInputsHtml)) !== null) {
+    while ((match = inputRegex.exec(inputsHtml)) !== null) {
       hiddenFields[match[1]] = match[2];
     }
 
+    // Return the action URL and fields so the frontend can auto-submit them
     return NextResponse.json({
       actionUrl,
       hiddenFields
     });
+
   } catch (error: any) {
-    console.error('Error initiating booking:', error);
+    console.error('Error proxying checkout:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -137,6 +137,52 @@ export default function Home() {
     setPassengerDetails(null);
   };
 
+  const handleCheckout = async () => {
+    setIsPricingLoading(true);
+    try {
+      const res = await fetch('/api/booking/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceInfo: selectedBus?.serviceInfo,
+          jsessionid,
+          passengers: passengerDetails?.passengers.map((p, i) => ({
+            ...p,
+            seatNo: selectedSeats[i],
+            type: 'Seat'
+          })),
+          email: passengerDetails?.email,
+          mobile: passengerDetails?.mobile,
+          boardingPoint,
+          droppingPoint,
+          fareHint: selectedSeats.length > 0 ? (pricing.basic / selectedSeats.length).toString() : '0'
+        })
+      });
+      const data = await res.json();
+      if (data.actionUrl && data.hiddenFields) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.actionUrl;
+        Object.entries(data.hiddenFields).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        alert('Failed to initiate payment: ' + (data.error || 'Unknown error'));
+        setIsPricingLoading(false);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Checkout failed');
+      setIsPricingLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
       
@@ -296,7 +342,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service Start Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[7] || selectedBus.origin}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger Start Point</span>
@@ -316,7 +362,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service End Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[9] || selectedBus.destination}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger End Point</span>
@@ -456,59 +502,25 @@ export default function Home() {
                 variant="outline"
                 onClick={handleReset}
                 className="bg-secondary hover:bg-secondary/80 border-transparent text-secondary-foreground py-6"
-                disabled={isPricingLoading}
               >
                 Book Another Ticket
               </Button>
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 shadow-lg shadow-emerald-950/40 flex items-center gap-2"
-                onClick={async () => {
-                  setIsPricingLoading(true);
-                  try {
-                    const res = await fetch('/api/booking/initiate', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        serviceInfo: selectedBus.serviceInfo,
-                        jsessionid,
-                        seatNo: selectedSeats.join(','),
-                        passengerDetails,
-                        boardingPoint,
-                        droppingPoint
-                      })
-                    });
-                    
-                    const data = await res.json();
-                    if (data.actionUrl && data.hiddenFields) {
-                      // Dynamically create a form and submit it
-                      const form = document.createElement('form');
-                      form.method = 'POST';
-                      form.action = data.actionUrl;
-                      
-                      for (const [key, value] of Object.entries(data.hiddenFields)) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = key;
-                        input.value = value as string;
-                        form.appendChild(input);
-                      }
-                      
-                      document.body.appendChild(form);
-                      form.submit();
-                    } else {
-                      alert('Failed to initiate payment. Please try again.');
-                      setIsPricingLoading(false);
-                    }
-                  } catch (e) {
-                    console.error('Payment initiation error', e);
-                    alert('An error occurred while connecting to the payment gateway.');
-                    setIsPricingLoading(false);
-                  }
-                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-6 shadow-lg shadow-emerald-950/40 flex items-center gap-2 relative overflow-hidden"
+                onClick={handleCheckout}
                 disabled={isPricingLoading}
               >
-                {isPricingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                {isPricingLoading ? 'Processing...' : 'Proceed to Payment'}
+                {isPricingLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Redirecting to Bank...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    Proceed to Payment
+                  </>
+                )}
               </Button>
             </div>
 
