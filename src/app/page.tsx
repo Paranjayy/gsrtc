@@ -306,7 +306,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service Start Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[7] || selectedBus.origin}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger Start Point</span>
@@ -326,7 +326,7 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Service End Place</span>
-                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</span>
+                    <span className="font-semibold text-foreground mt-0.5 block uppercase">{selectedBus.serviceInfo?.split(',')[9] || selectedBus.destination}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase block">Passenger End Point</span>
@@ -515,10 +515,10 @@ export default function Home() {
                     <div className="text-foreground">{searchParams.date}</div>
                     
                     <div className="uppercase">SERVICE START PLACE</div>
-                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo?.split(',')[7] || selectedBus.origin}</div>
                     
                     <div className="uppercase">SERVICE START POINT</div>
-                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[7] || selectedBus.origin}</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo?.split(',')[7] || selectedBus.origin}</div>
                     
                     <div className="uppercase">PASSENGER START POINT</div>
                     <div className="text-foreground uppercase">{searchParams.origin}</div>
@@ -533,7 +533,7 @@ export default function Home() {
                     <div className="text-foreground uppercase">{boardingPoint ? boardingPoint.split(',')[2] : searchParams.origin}</div>
                     
                     <div className="uppercase">SERVICE END PLACE</div>
-                    <div className="text-foreground uppercase">{selectedBus.serviceInfo.split(',')[9] || selectedBus.destination}</div>
+                    <div className="text-foreground uppercase">{selectedBus.serviceInfo?.split(',')[9] || selectedBus.destination}</div>
                     
                     <div className="uppercase">PASSENGER END POINT</div>
                     <div className="text-foreground uppercase">{searchParams.destination}</div>
