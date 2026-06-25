@@ -13,7 +13,7 @@ import { BusService } from '@/lib/gsrtc-data';
 import { 
   Bus, CheckCircle2, Award, Calendar, Compass, 
   MapPin, Users, Ticket, ArrowLeft, ArrowRight, 
-  Coins, CreditCard, Sparkles, Navigation
+  Coins, CreditCard, Sparkles, Navigation, Loader2
 } from 'lucide-react';
 
 type BookingStep = 'search' | 'seat-selection' | 'summary';
@@ -42,8 +42,15 @@ export default function Home() {
   const [passengerDetails, setPassengerDetails] = useState<{
     email: string;
     mobile: string;
-    passengers: Array<{ name: string; age: number; gender: 'M' | 'F' }>;
+    passengers: { name: string; age: number; gender: 'M' | 'F' }[];
   } | null>(null);
+
+  const [pricing, setPricing] = useState({
+    basic: 0, resFee: 0, accFee: 0, tollFee: 0, tollFeeR: 0, 
+    serviceCharge: 0, otherLevies: 0, gst: 0, concessions: 0, 
+    discount: 0, total: 0
+  });
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
 
   // Search Submit Handler
   const handleSearchSubmit = (params: typeof searchParams) => {
@@ -91,23 +98,36 @@ export default function Home() {
   };
 
   // Booking details submit handler
-  const handleBookingSubmit = (details: NonNullable<typeof passengerDetails>) => {
+  const handleBookingSubmit = async (details: NonNullable<typeof passengerDetails>) => {
     setPassengerDetails(details);
-    setStep('summary');
+    setIsPricingLoading(true);
+    
+    try {
+      const res = await fetch(`/api/fare?serviceInfo=${encodeURIComponent(selectedBus?.serviceInfo || '')}&jsessionid=${jsessionid}`);
+      if (res.ok) {
+        const data = await res.json();
+        const m = selectedSeats.length;
+        setPricing({
+          basic: (data.basicFare || 0) * m,
+          resFee: (data.resFee || 0) * m,
+          accFee: (data.accFee || 0) * m,
+          tollFee: (data.tollFee || 0) * m,
+          tollFeeR: (data.tollFeeR || 0) * m,
+          serviceCharge: (data.serviceCharge || 0) * m,
+          otherLevies: (data.otherLevies || 0) * m,
+          gst: (data.gst || 0) * m,
+          concessions: (data.concessions || 0) * m,
+          discount: (data.discount || 0) * m,
+          total: (data.totalAmount || 0) * m
+        });
+      }
+    } catch (e) {
+      console.error("Failed to fetch pricing", e);
+    } finally {
+      setIsPricingLoading(false);
+      setStep('summary');
+    }
   };
-
-  // Calculate pricing
-  const calculatePricing = () => {
-    if (!selectedBus) return { basic: 0, resFee: 0, gst: 0, discount: 0, total: 0 };
-    const basic = selectedBus.fare * selectedSeats.length;
-    const resFee = 5.0 * selectedSeats.length;
-    const gst = 3.0 * selectedSeats.length;
-    const discount = 1.0 * selectedSeats.length;
-    const total = basic + resFee + gst - discount;
-    return { basic, resFee, gst, discount, total };
-  };
-
-  const pricing = calculatePricing();
 
   const handleReset = () => {
     setStep('search');
@@ -225,12 +245,18 @@ export default function Home() {
 
                   {/* Bottom: Passenger details (only enabled if a seat is selected) */}
                   {selectedSeats.length > 0 && (
-                    <div className="animate-fade-in pb-8">
+                    <div className="animate-fade-in pb-8 relative">
                       <GSRTCPassengerForm
                         selectedSeatsCount={selectedSeats.length}
                         selectedSeats={selectedSeats}
                         onSubmit={handleBookingSubmit}
                       />
+                      {isPricingLoading && (
+                        <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[2px] flex flex-col items-center justify-center rounded-xl">
+                          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                          <p className="mt-2 text-xs font-semibold text-primary uppercase tracking-widest">Fetching Exact Fare...</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -326,24 +352,60 @@ export default function Home() {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Summary Info</h3>
                 <div className="space-y-2 pt-3 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Basic Fare</span>
+                    <span className="uppercase text-xs">Basic Fare</span>
                     <span className="font-mono text-foreground">₹{pricing.basic.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Reservation Fee</span>
+                    <span className="uppercase text-xs">Reservation Fee</span>
                     <span className="font-mono text-foreground">₹{pricing.resFee.toFixed(2)}</span>
                   </div>
+                  {pricing.accFee > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Accident Insc Charges</span>
+                      <span className="font-mono text-foreground">₹{pricing.accFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {pricing.tollFee > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Toll Fee</span>
+                      <span className="font-mono text-foreground">₹{pricing.tollFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {pricing.tollFeeR > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Toll Fee Rajasthan</span>
+                      <span className="font-mono text-foreground">₹{pricing.tollFeeR.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {pricing.serviceCharge > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Service Charge</span>
+                      <span className="font-mono text-foreground">₹{pricing.serviceCharge.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {pricing.otherLevies > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Other Levies</span>
+                      <span className="font-mono text-foreground">₹{pricing.otherLevies.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>GST</span>
+                    <span className="uppercase text-xs">GST</span>
                     <span className="font-mono text-foreground">₹{pricing.gst.toFixed(2)}</span>
                   </div>
+                  {pricing.concessions > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="uppercase text-xs">Concessions</span>
+                      <span className="font-mono text-emerald-500">-₹{pricing.concessions.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Discounts</span>
+                    <span className="uppercase text-xs">Discounts</span>
                     <span className="font-mono text-emerald-500">-₹{pricing.discount.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-2.5 text-base">
-                    <span>Total Amount</span>
-                    <span className="font-mono text-primary">₹{pricing.total.toFixed(2)}</span>
+                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-2.5 text-base uppercase">
+                    <span className="text-[#ff5500]">Total</span>
+                    <span className="font-bold text-[#ff5500]">Rs. {pricing.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
