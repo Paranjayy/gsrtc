@@ -77,13 +77,8 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
           const data = await res.json();
           setOriginSuggestions(data);
           
-          const exactMatch = data.find((s: Station) => s.name.toLowerCase() === trimmed.toLowerCase());
-          if (exactMatch) {
-            setSelectedOrigin(exactMatch);
-            setShowOriginList(false);
-          } else {
-            setShowOriginList(data.length > 0);
-          }
+          setOriginSuggestions(data);
+          setShowOriginList(data.length > 0);
         }
       } catch (err) {
         console.error('Error fetching origin stations:', err);
@@ -115,13 +110,8 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
           const data = await res.json();
           setDestSuggestions(data);
           
-          const exactMatch = data.find((s: Station) => s.name.toLowerCase() === trimmed.toLowerCase());
-          if (exactMatch) {
-            setSelectedDest(exactMatch);
-            setShowDestList(false);
-          } else {
-            setShowDestList(data.length > 0);
-          }
+          setDestSuggestions(data);
+          setShowDestList(data.length > 0);
         }
       } catch (err) {
         console.error('Error fetching dest stations:', err);
@@ -246,6 +236,11 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
                       setOriginInput(item.name);
                       setShowOriginList(false);
                     }}
+                    ref={(el) => {
+                      if (idx === originFocusedIndex && el) {
+                        el.scrollIntoView({ block: 'nearest' });
+                      }
+                    }}
                     className={`px-4 py-2.5 cursor-pointer text-sm flex justify-between ${
                       idx === originFocusedIndex 
                         ? 'bg-accent text-accent-foreground' 
@@ -299,6 +294,11 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
                       setSelectedDest(item);
                       setDestInput(item.name);
                       setShowDestList(false);
+                    }}
+                    ref={(el) => {
+                      if (idx === destFocusedIndex && el) {
+                        el.scrollIntoView({ block: 'nearest' });
+                      }
                     }}
                     className={`px-4 py-2.5 cursor-pointer text-sm flex justify-between ${
                       idx === destFocusedIndex 

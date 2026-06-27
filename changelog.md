@@ -1,6 +1,38 @@
 # GSRTC Bus Booking Clone - Version Changelog
 
-This changelog outlines all technical updates, architectural additions, and user interface improvements made to the GSRTC Bus Booking application from **v0.1** to **v0.5**.
+This changelog outlines all technical updates, architectural additions, and user interface improvements made to the GSRTC Bus Booking application from **v0.1** to **v0.6**.
+
+---
+
+## 🚀 v0.6 (Latest Stable / Published)
+*Focus: SQLite Autocomplete Search, Prefix Match Priority, Keyboard Scroll-into-view, Bus Class Icons and Color Coding*
+
+### 🛠️ Architecture & Backend
+- **SQLite Autocomplete Backend**:
+  - Rewrote `/api/stations/route.ts` to query the local `stations.db` SQLite database using `searchStationsByName`. This removed network latency, reducing autocomplete load time to under **1ms**.
+  - Enabled **middle letters matching** (e.g. typing "gadh" matches "JUNAGADH") by replacing prefix-only proxy search with local SQL `LIKE '%term%'` patterns.
+- **Prefix Relevance Search Ordering**:
+  - Added custom `ORDER BY` prioritization logic to SQLite query so results starting with the search prefix (e.g., `JUNAGADH` when typing `junagad`) are returned first, followed by substring matches elsewhere in the name (e.g., `AMBALIYA JUNAGADH`), and alphabetical tiebreakers.
+
+### 🎨 UI & Layout Improvements
+- **Bus Class Custom Icons**:
+  - Integrated dedicated SVG icons for each bus service type:
+    - `VOLVO` → `VolvoIcon` (rendered slightly smaller with a thicker `strokeWidth={1.5}` for details).
+    - `AC LUXURY` → `SeatCoolLeftRoundedIcon` (rendered slightly larger for the AC seating indicator).
+    - `SLEEPER` → `BedIcon` (solid fill matching the text color instead of an outline).
+    - `ELECTRIC AC` → `EvMobiledataBadgeOutlineRoundedIcon` (solid fill).
+    - `LUXURY` → `CarSeatIcon` (solid fill, restricted strictly to luxury type).
+    - `EXPRESS`, `GURJARNAGRI`, `LOCAL ORDINARY` → mapped to corresponding Lucide icons (`Zap` and `Bus` respectively).
+- **Service Class Color-Coding**:
+  - Distinctly color-coded all pills in `getClassColor` (e.g., `VOLVO` to indigo, `SLEEPER` to rose, `ELECTRIC AC` to cyan, `GURJARNAGRI` to orange, `LOCAL ORDINARY` to slate).
+- **Keyboard Navigation Auto-Scroll**:
+  - Added React ref scroll-into-view callbacks to the active suggestion item in the search dropdown, ensuring the active item scrolls automatically into view during ArrowUp/ArrowDown key presses.
+
+### ⚡ Feature Enhancements
+- **Enhanced Autocomplete Experience**:
+  - Removed search suggestion auto-closing on exact matches, allowing users to type a general keyword and still select extended matches (like selecting `JUNAGADH AZAD CHOK` when typing `JUNAGADH`).
+- **Refined Sort Order**:
+  - Swapped class priority rankings to: `VOLVO` → `AC LUXURY` → `SLEEPER` → `ELECTRIC AC` → `LUXURY` → `EXPRESS` → `GURJARNAGRI` → `LOCAL ORDINARY`.
 
 ---
 

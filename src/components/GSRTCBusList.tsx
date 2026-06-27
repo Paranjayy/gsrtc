@@ -5,7 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BusService } from '@/lib/gsrtc-data';
-import { Clock, IndianRupee, ArrowRight, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { Clock, IndianRupee, ArrowRight, CheckCircle2, AlertTriangle, Info, Zap, Bus } from 'lucide-react';
+import { CarSeatIcon } from '@/components/icons/mdi-car-seat';
+import { SeatCoolLeftRoundedIcon } from '@/components/icons/material-symbols-seat-cool-left-rounded';
+import { BedIcon } from '@/components/icons/fa-solid-bed';
+import { EvMobiledataBadgeOutlineRoundedIcon } from '@/components/icons/material-symbols-ev-mobiledata-badge-outline-rounded';
+import { VolvoIcon } from '@/components/icons/simple-icons-volvo';
 
 interface BusListProps {
   origin: string;
@@ -40,6 +45,30 @@ export default function GSRTCBusList({
   // Cache: via raw string -> resolved display string
   const viaCache = useRef<Map<string, string>>(new Map());
   const [, forceUpdate] = useState(0);
+
+  const renderClassIcon = (className: string, size: number) => {
+    const iconClass = className.trim().toUpperCase();
+    
+    switch (iconClass) {
+      case 'VOLVO':
+        return <VolvoIcon size={size - 2} fill="none" stroke="currentColor" strokeWidth={1.5} className="shrink-0" />;
+      case 'AC LUXURY':
+        return <SeatCoolLeftRoundedIcon size={size + 2} fill="currentColor" stroke="none" className="shrink-0" />;
+      case 'SLEEPER':
+        return <BedIcon size={size} fill="currentColor" stroke="none" className="shrink-0" />;
+      case 'ELECTRIC AC':
+        return <EvMobiledataBadgeOutlineRoundedIcon size={size} fill="currentColor" stroke="none" className="shrink-0" />;
+      case 'LUXURY':
+        return <CarSeatIcon size={size} fill="currentColor" stroke="none" className="shrink-0" />;
+      case 'EXPRESS':
+        return <Zap size={size} strokeWidth={size <= 10 ? 2.5 : 2} className="shrink-0 text-yellow-500 fill-yellow-500/20" />;
+      case 'GURJARNAGRI':
+      case 'LOCAL ORDINARY':
+        return <Bus size={size} strokeWidth={size <= 10 ? 2.5 : 2} className="shrink-0" />;
+      default:
+        return null;
+    }
+  };
 
   const resolveViaCodes = useCallback(async (via: string) => {
     if (viaCache.current.has(via)) return;
@@ -160,13 +189,24 @@ export default function GSRTCBusList({
   }, [origin, originId, originCode, destination, destinationId, destinationCode, date, passengers]);
 
   const getClassColor = (className: string) => {
-    switch (className) {
+    const key = className.trim().toUpperCase();
+    switch (key) {
+      case 'VOLVO':
+        return 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-800';
       case 'AC LUXURY':
         return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
+      case 'SLEEPER':
+        return 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/50 dark:text-rose-300 dark:border-rose-800';
+      case 'ELECTRIC AC':
+        return 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/50 dark:text-cyan-300 dark:border-cyan-800';
       case 'LUXURY':
         return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-800';
       case 'EXPRESS':
         return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
+      case 'GURJARNAGRI':
+        return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800';
+      case 'LOCAL ORDINARY':
+        return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800';
       default:
         return 'bg-secondary text-secondary-foreground border-border';
     }
@@ -339,8 +379,9 @@ export default function GSRTCBusList({
                           <span className="text-sm font-bold uppercase tracking-wide">
                             {bus.tripCode}
                           </span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${getClassColor(bus.className)}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold inline-flex items-center gap-1 leading-none ${getClassColor(bus.className)}`}>
                             {bus.className}
+                            {renderClassIcon(bus.className, 10)}
                           </span>
                         </div>
                         <div className="flex gap-6 text-sm text-muted-foreground pt-0.5">
@@ -439,8 +480,9 @@ export default function GSRTCBusList({
                         <span className="text-sm font-bold uppercase tracking-wide">
                           {bus.tripCode}
                         </span>
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-semibold ${getClassColor(bus.className)}`}>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-semibold inline-flex items-center gap-1 leading-none ${getClassColor(bus.className)}`}>
                           {bus.className}
+                          {renderClassIcon(bus.className, 12)}
                         </span>
                       </div>
                       

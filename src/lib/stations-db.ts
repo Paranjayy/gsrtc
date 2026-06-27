@@ -27,7 +27,14 @@ export function getStationByCode(code: string): StationRow | undefined {
 /** Search stations by partial name (case-insensitive), returns up to `limit` results. */
 export function searchStationsByName(term: string, limit = 20): StationRow[] {
   const db = getDb();
-  return db.prepare("SELECT id, code, name FROM stations WHERE name LIKE ? COLLATE NOCASE LIMIT ?").all(`%${term}%`, limit) as StationRow[];
+  const query = `
+    SELECT id, code, name 
+    FROM stations 
+    WHERE name LIKE ? COLLATE NOCASE 
+    ORDER BY (CASE WHEN name LIKE ? COLLATE NOCASE THEN 1 ELSE 2 END), name ASC
+    LIMIT ?
+  `;
+  return db.prepare(query).all(`%${term}%`, `${term}%`, limit) as StationRow[];
 }
 
 /** Resolve a comma/space-separated list of via codes to full names. */
