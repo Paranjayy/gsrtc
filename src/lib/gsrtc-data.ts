@@ -16,6 +16,7 @@ export interface BusService {
   availableSeats: number;
   isFull: boolean;
   serviceInfo?: string;
+  via?: string;
 }
 
 export interface Seat {

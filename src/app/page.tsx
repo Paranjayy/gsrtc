@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import GSRTCSearchForm from '@/components/GSRTCSearchForm';
 import GSRTCBusList from '@/components/GSRTCBusList';
 import GSRTCSeatLayout from '@/components/GSRTCSeatLayout';
@@ -152,13 +153,17 @@ export default function Home() {
       
       {/* Premium Navbar */}
       <header className="sticky top-0 z-50 bg-background/80 border-b backdrop-blur-md print:hidden">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={handleReset}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Bus className="w-5 h-5 text-white" />
-            </div>
+        <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={handleReset}>
+            <Image 
+              src="/bus-logo.png" 
+              alt="GSRTC Logo" 
+              width={36} 
+              height={36} 
+              className="w-9 h-9 object-contain drop-shadow-md transition-transform hover:scale-105"
+            />
             <div>
-              <span className="text-md font-black tracking-wider uppercase flex items-center gap-1.5 leading-none">
+              <span className="text-sm font-black tracking-wider uppercase flex items-center gap-1.5 leading-none">
                 GSRTC <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">CLONE</span>
               </span>
               <span className="text-[9px] text-muted-foreground font-semibold tracking-wide uppercase mt-0.5 block">
@@ -212,6 +217,9 @@ export default function Home() {
                 passengers={searchParams.passengers}
                 onSelectBus={handleSelectBus}
                 selectedBusId={selectedBus?.serviceId}
+                onDateChange={(newDate) => {
+                  setSearchParams({ ...searchParams, date: newDate, timestamp: Date.now() });
+                }}
               />
             )}
           </div>

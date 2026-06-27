@@ -216,11 +216,11 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
 
   return (
     <Card className="w-full shadow-lg border overflow-visible bg-card text-card-foreground">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-0 md:flex md:items-end md:gap-4">
+      <CardContent className="py-3 px-4">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-0 md:flex md:items-end md:gap-3">
           
           {/* Origin field */}
-          <div ref={originRef} className="flex-[1.5] relative space-y-2">
+          <div ref={originRef} className="flex-[1.5] relative space-y-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Origin</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -261,7 +261,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
           </div>
 
           {/* Swap Button */}
-          <div className="flex justify-center md:pb-2">
+          <div className="flex justify-center md:pb-1">
             <Button
               type="button"
               variant="outline"
@@ -274,7 +274,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
           </div>
 
           {/* Destination field */}
-          <div ref={destRef} className="flex-[1.5] relative space-y-2">
+          <div ref={destRef} className="flex-[1.5] relative space-y-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Destination</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -315,7 +315,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
           </div>
 
           {/* Date Picker field */}
-          <div className="w-[130px] shrink-0 space-y-2">
+          <div className="w-[130px] shrink-0 space-y-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</label>
             <div className="relative">
               <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
@@ -337,7 +337,7 @@ export default function GSRTCSearchForm({ onSearch }: SearchFormProps) {
 
           <div className="flex items-end gap-2">
             {/* Passengers field */}
-            <div className="w-full md:w-24 relative space-y-2">
+            <div className="w-full md:w-24 relative space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Passengers</label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />

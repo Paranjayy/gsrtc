@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BusService } from '@/lib/gsrtc-data';
-import { Clock, IndianRupee, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Clock, IndianRupee, ArrowRight, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
 interface BusListProps {
   origin: string;
@@ -18,6 +18,7 @@ interface BusListProps {
   passengers: number;
   onSelectBus: (bus: BusService, jsessionid: string) => void;
   selectedBusId?: string;
+  onDateChange?: (newDate: string) => void;
 }
 
 export default function GSRTCBusList({
@@ -30,9 +31,86 @@ export default function GSRTCBusList({
   date,
   passengers,
   onSelectBus,
-  selectedBusId
+  selectedBusId,
+  onDateChange
 }: BusListProps) {
   const [buses, setBuses] = useState<BusService[]>([]);
+  const [viaOpenId, setViaOpenId] = useState<string | null>(null);
+  const [viaPos, setViaPos] = useState<{ x: number; y: number } | null>(null);
+  // Cache: via raw string -> resolved display string
+  const viaCache = useRef<Map<string, string>>(new Map());
+  const [, forceUpdate] = useState(0);
+
+  const resolveViaCodes = useCallback(async (via: string) => {
+    if (viaCache.current.has(via)) return;
+    viaCache.current.set(via, '…'); // placeholder while loading
+    try {
+      const res = await fetch(`/api/via-resolve?codes=${encodeURIComponent(via)}`);
+      if (res.ok) {
+        const data: { code: string; name: string }[] = await res.json();
+        viaCache.current.set(via, data.map(d => d.name).join(' → '));
+        forceUpdate(n => n + 1);
+      }
+    } catch {
+      viaCache.current.set(via, via.toUpperCase());
+    }
+  }, []);
+
+  const generateDates = (currentDateStr: string) => {
+    const [day, month, year] = currentDateStr.split('/');
+    const current = new Date(Number(year), Number(month) - 1, Number(day));
+    current.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dates = [];
+    let startOffset = -2;
+
+    const idealStartDate = new Date(current);
+    idealStartDate.setDate(current.getDate() + startOffset);
+
+    if (idealStartDate < today) {
+      const diffTime = today.getTime() - idealStartDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      startOffset += diffDays;
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(current);
+      d.setDate(current.getDate() + startOffset + i);
+      
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      
+      dates.push({
+        str: `${dd}/${mm}/${yyyy}`,
+        label: `${dd} ${d.toLocaleString('default', { month: 'short' })}`,
+        isCurrent: d.getTime() === current.getTime(),
+        isHiddenMobile: false
+      });
+    }
+
+    // Figure out which 3 to show on mobile (always include the current date)
+    const selectedIndex = dates.findIndex(d => d.isCurrent);
+    let showStart = selectedIndex - 1;
+    let showEnd = selectedIndex + 1;
+    
+    if (showStart < 0) {
+      showStart = 0;
+      showEnd = 2;
+    } else if (showEnd >= 5) {
+      showEnd = 4;
+      showStart = 2;
+    }
+
+    dates.forEach((d, idx) => {
+      d.isHiddenMobile = idx < showStart || idx > showEnd;
+    });
+
+    return dates;
+  };
   const [jsessionid, setJsessionid] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,10 +222,45 @@ export default function GSRTCBusList({
     );
   }
 
+  const CLASS_ORDER: Record<string, number> = {
+    // --- Bus List Sort Order (Primary: Bus Class Priority) ---
+    // Edit the numbers to change display order. Lower = appears first.
+    // Any class not listed here will appear at the very bottom (rank 99).
+    'VOLVO':          0,
+    'AC LUXURY':      1,
+    'ELECTRIC AC':    2,
+    'EXPRESS':        3,
+    'SLEEPER':        4,
+    'LUXURY':         5,
+    'GURJARNAGRI':    6,
+    'LOCAL ORDINARY': 7,
+  };
+
+  const classRank = (cls: string) => {
+    const key = cls.trim().toUpperCase();
+    return CLASS_ORDER[key] ?? 99;
+  };
+
+  const parseTime = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
   const uniqueClasses = Array.from(new Set(buses.map(b => b.className))).filter(Boolean);
-  const filteredBuses = filterClass === 'ALL' ? buses : buses.filter(b => b.className === filterClass);
+  const filteredBuses = (filterClass === 'ALL' ? buses : buses.filter(b => b.className === filterClass))
+    .slice()
+    .sort((a, b) => {
+      // 1. Sort by class priority rank
+      const classDiff = classRank(a.className) - classRank(b.className);
+      if (classDiff !== 0) return classDiff;
+      // 2. Same rank (e.g. both unknown) → group by class name alphabetically
+      const nameDiff = a.className.localeCompare(b.className);
+      if (nameDiff !== 0) return nameDiff;
+      return parseTime(a.departureTime) - parseTime(b.departureTime);
+    });
 
   return (
+    <>
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-muted/50 border rounded-lg px-4 py-3 backdrop-blur-md">
         <div>
@@ -156,11 +269,27 @@ export default function GSRTCBusList({
             <ArrowRight className="w-4 h-4 text-muted-foreground" />
             <span>{destination}</span>
           </h2>
-          <p className="text-xs text-muted-foreground">Date of Journey: {date}</p>
+          <div className="flex items-center gap-1.5 mt-2">
+            {generateDates(date).map(d => (
+              <button
+                key={d.str}
+                onClick={() => onDateChange && onDateChange(d.str)}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-colors border ${
+                  d.isHiddenMobile ? 'hidden sm:block' : ''
+                } ${
+                  d.isCurrent 
+                    ? 'bg-primary border-primary text-primary-foreground shadow-sm pointer-events-none' 
+                    : 'bg-background border-border hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <Select value={filterClass} onValueChange={(val) => setFilterClass(val || 'All')}>
-            <SelectTrigger className="w-[160px] h-8 text-xs bg-background">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Select value={filterClass} onValueChange={(val) => setFilterClass(val || 'ALL')}>
+            <SelectTrigger className="w-full md:w-[140px] h-9 text-xs bg-background border-border shadow-sm focus:ring-1 focus:ring-primary/50 focus:ring-offset-0">
               <SelectValue placeholder="Bus Type" />
             </SelectTrigger>
             <SelectContent>
@@ -170,9 +299,9 @@ export default function GSRTCBusList({
               ))}
             </SelectContent>
           </Select>
-          <span className="text-sm font-semibold text-primary font-mono whitespace-nowrap">
-            {filteredBuses.length} Trips Available
-          </span>
+          <div className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shadow-sm">
+            {filteredBuses.length} Trips
+          </div>
         </div>
       </div>
 
@@ -199,11 +328,113 @@ export default function GSRTCBusList({
                     : 'hover:border-border hover:bg-accent/30'
                 }`}
               >
-                <CardContent className="p-5 md:p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    
-                    {/* Bus Info */}
-                    <div className="space-y-2 flex-1">
+                <CardContent className="px-4 py-3">
+                  {/* MOBILE LAYOUT (block on mobile, hidden on md+) */}
+                  <div className="block md:hidden space-y-2.5">
+                    {/* Upper row: Info left, Action right */}
+                    <div className="flex justify-between items-start gap-2">
+                      {/* Left: Code, Dept, Dur */}
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="text-sm font-bold uppercase tracking-wide">
+                            {bus.tripCode}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${getClassColor(bus.className)}`}>
+                            {bus.className}
+                          </span>
+                        </div>
+                        <div className="flex gap-6 text-sm text-muted-foreground pt-0.5">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Dept</p>
+                            <p className="font-semibold text-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3 text-primary shrink-0" />
+                              {bus.departureTime}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Dur.</p>
+                            <p className="font-semibold text-foreground mt-0.5">{bus.duration}h</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Pricing & Seat Button aligned higher */}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <div className="text-right">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider leading-none">Fare</p>
+                          <p className="text-base font-black flex items-center justify-end gap-0.5 mt-0.5 font-mono">
+                            <IndianRupee className="w-3.5 h-3.5 text-emerald-500" />
+                            {bus.fare.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          {bus.isFull ? (
+                            <div className="px-3 py-1 rounded-md bg-destructive/10 border border-destructive/20 text-destructive font-bold text-[10px] tracking-wide text-center shrink-0">
+                              Full
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => onSelectBus(bus, jsessionid)}
+                              className={`px-2.5 py-1 h-7 text-xs font-bold transition-all relative ${
+                                isSelected
+                                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                                  : 'bg-secondary hover:bg-primary hover:text-primary-foreground text-secondary-foreground'
+                              }`}
+                            >
+                              {isSelected && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                              {bus.availableSeats} Seats
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lower row: Route (spans 100% card width) */}
+                    <div className="border-t border-border/50 pt-2">
+                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 flex-wrap">
+                        Route
+                        {bus.via && (
+                          <span className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onMouseEnter={(e) => {
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setViaPos({ x: rect.left, y: rect.top });
+                                setViaOpenId(bus.serviceId);
+                                resolveViaCodes(bus.via!);
+                              }}
+                              onMouseLeave={() => { setViaOpenId(null); setViaPos(null); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                resolveViaCodes(bus.via!);
+                                if (viaOpenId === bus.serviceId) {
+                                  setViaOpenId(null); setViaPos(null);
+                                } else {
+                                  setViaPos({ x: rect.left, y: rect.top });
+                                  setViaOpenId(bus.serviceId);
+                                }
+                              }}
+                              className="flex items-center gap-1 text-[11px] font-medium normal-case tracking-normal text-primary/80 hover:text-primary cursor-pointer underline-offset-2 hover:underline"
+                            >
+                              <Info className="w-3 h-3 shrink-0" />
+                              via {bus.via}
+                            </button>
+                          </span>
+                        )}
+                      </p>
+                      <p className="font-semibold text-foreground text-sm mt-0.5 w-full break-words">
+                        <span className="uppercase">{bus.origin}</span>
+                        {' → '}
+                        <span>{bus.destination.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* DESKTOP LAYOUT (hidden on mobile, flex on md+) */}
+                  <div className="hidden md:flex justify-between items-center gap-3">
+                    {/* Left: Bus Info */}
+                    <div className="space-y-2 flex-1 min-w-0">
                       <div className="flex flex-wrap gap-2 items-center">
                         <span className="text-sm font-bold uppercase tracking-wide">
                           {bus.tripCode}
@@ -213,33 +444,68 @@ export default function GSRTCBusList({
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-[120px_120px_1fr] gap-2 text-sm text-muted-foreground">
                         <div>
-                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Dept Time</p>
-                          <p className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
-                            <Clock className="w-3.5 h-3.5 text-primary" />
+                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Dept</p>
+                          <p className="font-semibold text-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3 text-primary shrink-0" />
                             {bus.departureTime}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Duration</p>
-                          <p className="font-semibold text-foreground mt-0.5">{bus.duration} hrs</p>
+                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Dur.</p>
+                          <p className="font-semibold text-foreground mt-0.5">{bus.duration}h</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider">Route</p>
-                          <p className="font-semibold text-foreground truncate mt-0.5">{bus.origin} → {bus.destination}</p>
+                          <p className="text-xs text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 flex-wrap">
+                            Route
+                            {bus.via && (
+                              <span className="inline-flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onMouseEnter={(e) => {
+                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                    setViaPos({ x: rect.left, y: rect.top });
+                                    setViaOpenId(bus.serviceId);
+                                    resolveViaCodes(bus.via!);
+                                  }}
+                                  onMouseLeave={() => { setViaOpenId(null); setViaPos(null); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                    resolveViaCodes(bus.via!);
+                                    if (viaOpenId === bus.serviceId) {
+                                      setViaOpenId(null); setViaPos(null);
+                                    } else {
+                                      setViaPos({ x: rect.left, y: rect.top });
+                                      setViaOpenId(bus.serviceId);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 text-xs font-medium normal-case tracking-normal text-primary/80 hover:text-primary cursor-pointer underline-offset-2 hover:underline"
+                                >
+                                  <Info className="w-3 h-3 shrink-0" />
+                                  via {bus.via}
+                                </button>
+                              </span>
+                            )}
+                          </p>
+                          <p className="font-semibold text-foreground truncate mt-0.5">
+                            <span className="uppercase">{bus.origin}</span>
+                            {' → '}
+                            <span>{bus.destination.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Pricing and Action */}
-                    <div className="flex items-center justify-between md:justify-end md:gap-8 border-t md:border-t-0 pt-4 md:pt-0 border-border shrink-0">
+                    {/* Right: Pricing and Action */}
+                    <div className="flex flex-col items-end gap-2 shrink-0 self-center">
                       
                       {/* Price */}
-                      <div className="text-left md:text-right">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Fare</p>
-                        <p className="text-xl font-black flex items-center gap-0.5 mt-0.5 font-mono">
-                          <IndianRupee className="w-4 h-4 text-emerald-500" />
+                      <div className="text-right">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Fare</p>
+                        <p className="text-lg md:text-xl font-black flex items-center justify-end gap-0.5 mt-0.5 font-mono">
+                          <IndianRupee className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500" />
                           {bus.fare.toFixed(2)}
                         </p>
                       </div>
@@ -247,26 +513,25 @@ export default function GSRTCBusList({
                       {/* Select Button */}
                       <div>
                         {bus.isFull ? (
-                          <div className="px-5 py-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive font-bold text-sm tracking-wide text-center shrink-0">
+                          <div className="px-4 py-1.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive font-bold text-xs tracking-wide text-center shrink-0">
                             Full
                           </div>
                         ) : (
                           <Button
                             onClick={() => onSelectBus(bus, jsessionid)}
-                            className={`px-5 font-bold transition-all relative ${
+                            className={`px-3 py-1 h-8 text-xs font-bold transition-all relative ${
                               isSelected
                                 ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                                 : 'bg-secondary hover:bg-primary hover:text-primary-foreground text-secondary-foreground'
                             }`}
                           >
-                            {isSelected && <CheckCircle2 className="w-4 h-4 mr-2" />}
+                            {isSelected && <CheckCircle2 className="w-3 h-3 mr-1" />}
                             {bus.availableSeats} Seats
                           </Button>
                         )}
                       </div>
 
                     </div>
-
                   </div>
                 </CardContent>
               </Card>
@@ -275,5 +540,17 @@ export default function GSRTCBusList({
         </div>
       )}
     </div>
+
+    {/* Via Tooltip — fixed position, escapes overflow-hidden on cards */}
+    {viaOpenId && viaPos && (
+      <div
+        className="fixed z-[9999] bg-popover border border-border text-popover-foreground text-xs font-normal rounded-md shadow-xl px-3 py-2.5 pointer-events-none max-w-xs leading-relaxed"
+        style={{ left: viaPos.x, top: viaPos.y - 8, transform: 'translateY(-100%)' }}
+      >
+        <span className="font-semibold text-muted-foreground block mb-1.5 uppercase text-[10px] tracking-widest">Via Stops</span>
+        {viaCache.current.get(buses.find(b => b.serviceId === viaOpenId)?.via ?? '') ?? '…'}
+      </div>
+    )}
+    </>
   );
 }

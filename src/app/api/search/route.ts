@@ -12,6 +12,10 @@ function parseBusHTML(htmlContent: string) {
     const codeMatch = rowHtml.match(/class="lh-24 f-bold d-color">([^<]+)<\/div>/i);
     const tripCode = codeMatch ? codeMatch[1].trim() : '';
     
+    // Extract Via stops
+    const viaMatch = rowHtml.match(/class="bus-type[^"]*"[^>]*>[\s\S]*?\[via-[\s\S]*?<font[^>]*>([^<]+)<\/font>\]/i);
+    const via = viaMatch ? viaMatch[1].trim() : '';
+
     // Extract Departure Time
     const timeSecMatch = rowHtml.match(/id="DeptTime"[\s\S]*?<div class=" lh-24  l-color">([^<]+)<\/div>/i);
     const departureTime = timeSecMatch ? timeSecMatch[1].trim() : '';
@@ -72,7 +76,8 @@ function parseBusHTML(htmlContent: string) {
         fare,
         availableSeats,
         isFull,
-        serviceInfo
+        serviceInfo,
+        via
       });
     }
   }
