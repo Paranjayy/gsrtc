@@ -1,10 +1,10 @@
 # GSRTC Bus Booking Clone - Version Changelog
 
-This changelog outlines all technical updates, architectural additions, and user interface improvements made to the GSRTC Bus Booking application from **v0.1** to **v0.5** (current local state).
+This changelog outlines all technical updates, architectural additions, and user interface improvements made to the GSRTC Bus Booking application from **v0.1** to **v0.5**.
 
 ---
 
-## 🚀 v0.5 (Latest Stable / Local Changes)
+## 🚀 v0.5 (Latest Stable / Published)
 *Focus: SQLite Database Integration, Interactive Via Tooltips, Instant Date Selector, Class-based Group Sorting, and Mobile Responsive Overhauls*
 
 ### 🛠️ Architecture & Backend
