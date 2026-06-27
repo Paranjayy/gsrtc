@@ -228,10 +228,10 @@ export default function GSRTCBusList({
     // Any class not listed here will appear at the very bottom (rank 99).
     'VOLVO':          0,
     'AC LUXURY':      1,
-    'ELECTRIC AC':    2,
-    'EXPRESS':        3,
-    'SLEEPER':        4,
-    'LUXURY':         5,
+    'SLEEPER':        2,
+    'ELECTRIC AC':    3,
+    'LUXURY':         4,
+    'EXPRESS':        5,
     'GURJARNAGRI':    6,
     'LOCAL ORDINARY': 7,
   };

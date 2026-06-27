@@ -37,7 +37,7 @@ This changelog outlines all technical updates, architectural additions, and user
   - Added custom calendar arithmetic to ensure **past dates are never displayed**; if the selected date is today, the window shifts forward to prevent invalid search payloads.
   - Added CSS-media rules to dynamically hide outer date options on narrow mobile screens.
 - **Advanced Bus List Class Sorting**:
-  - Grouped and ordered query results by bus service rank: `VOLVO` → `AC LUXURY` → `ELECTRIC AC` → `EXPRESS` → `SLEEPER` → `LUXURY` → `GURJARNAGRI` → `LOCAL ORDINARY`.
+  - Grouped and ordered query results by bus service rank: `VOLVO` → `AC LUXURY` → `SLEEPER` → `ELECTRIC AC` → `LUXURY` → `EXPRESS` → `GURJARNAGRI` → `LOCAL ORDINARY`.
   - Added alphabetical grouping fallback for unlisted/unknown bus classes, ensuring they stay grouped together.
   - Implemented secondary chronological sorting by departure time (earliest departure first) inside all groups.
 - **Interactive Tooltip for Via Stops**:
