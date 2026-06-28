@@ -140,8 +140,27 @@ Categories:
 ### Known Limitations
 - ❌ **Payment gateway** — GSRTC's Java Struts backend rejects external session submissions (see `gsrtc_integration_notes.md` for 4 attempted approaches)
 
-### Upcoming (Paranjay's needs — to be detailed later)
-> Paranjay will add specific requirements/expectations here as they come up.
+### Upcoming (Paranjay's Requirements — extracted from conversations)
+
+#### 🎨 Design Enhancements
+- **Professional/polish UI overhaul** — KP wants to improve the overall design quality, moving away from card slop toward a cleaner, more polished look (referenced `gsrtc.lovable.app` as having better design)
+- **Notion-like DB views** for bus results — sorting/filtering/grouping by properties (bus type, time, fare, availability), similar to Notion database views
+
+#### ⚡ Feature Enhancements
+- **Advanced sorting/filtering/grouping** — sort by fare, time, bus type, duration; filter by booked seats, particular time range, bus class; group by time slots or bus type
+- **Consolidated daily stats dashboard** — quick glance overview showing total seats remaining, total cost, seat availability across all buses for a particular day/route
+- **PNR-based tracking in same input box** — detect if input is PNR (starts with `G` + digits) vs number plate, auto-route to tracking
+- **Distance to next stop** — show live distance from bus's current GPS location to the next scheduled stop (variable based on traffic/congestion)
+- **Bus fleet bruteforce dashboard** — if GSRTC API allows, iterate number plates to discover all active buses and show fleet-wide stats (total buses running, occupancy, routes, etc.) — inspired by RailRadar's approach for Indian railways
+- **Shareable tracking links** — proper slug/URL sharing for live tracking (currently missing, noted as a flaw)
+
+#### 🏗️ Backend Enhancements
+- **Virtual WebSocket for live data** — integrate live GSRTC tracking data streams for real-time dashboard updates
+- **Bruteforce dataset collection** — systematically query GSRTC vehicle APIs to build a comprehensive dataset of all active GSRTC vehicles, routes, and schedules
+
+#### 🌐 Deployment
+- **Connect Paranjay's Vercel to `Paranjayy/gsrtc` fork on `kp` branch** for auto-deploy previews
+- **Yajuvendra's live deployments**: `gsrtc.vercel.app` and `gsrtcb.vercel.app` (these are his, not Paranjay's)
 
 ### Potential Enhancements (backlog)
 - Multi-language support (Hindi/Gujarati)
