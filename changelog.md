@@ -16,7 +16,11 @@ This changelog outlines all technical updates, architectural additions, and user
 
 ### 🎨 UI & Layout Improvements
 - **Unified Vehicle Dashboard Card**:
-  - Consolidated 4 separate data blocks (Status, Route, Trip Progress, Duty Staff) into a single, cohesive interface panel separated by clean `border-t` dividers to eliminate uneven paddings and scrollbar clipping.
+  - Consolidated real-time tracking data into a single, cohesive interface panel separated by clean `border-t` dividers. The dashboard displays comprehensive telemetry and operational data, including:
+    - **Vehicle Status**: Registration number, Bus number, Online/Offline indicator, live Speed (km/h), and Trip Status.
+    - **Route & Schedule**: Active route name, assigned home depot, and vehicle service type.
+    - **Trip Progress**: Last departed station with timestamp, and next scheduled location with ETA.
+    - **Duty Staff**: Assigned conductor name and clickable contact number for quick access.
   - Enforced `p-0` on outer shadcn cards to strip default margins and take precise absolute control of padding alignments.
 - **High-Contrast Text Selection**:
   - Implemented tailwind `selection:bg-primary` and `selection:text-primary-foreground` globally on the `<body>` element to prevent OS-level text-highlight rendering from washing out font visibility.
