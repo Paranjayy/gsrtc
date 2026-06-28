@@ -193,7 +193,7 @@ export default function Home() {
       </header>
 
       {/* Main Container */}
-      <main className={`flex-1 container mx-auto px-4 space-y-6 ${step === 'track' ? 'py-4 max-w-7xl' : 'py-8 max-w-5xl'}`}>
+      <main className={`flex-1 container mx-auto px-4 ${step === 'track' ? (trackingActive ? 'py-4 max-w-7xl flex flex-col' : 'py-4 max-w-7xl space-y-6') : 'py-8 max-w-5xl space-y-6'}`}>
         
         {/* Banner Title */}
         {step !== 'summary' && step !== 'track' && (

@@ -4,6 +4,30 @@ This changelog outlines all technical updates, architectural additions, and user
 
 ---
 
+## 🚀 v0.8
+*Focus: PNR Tracking Support, Responsive Flexbox Layouts, Strict Mode Fixes, Mobile Optimizations*
+
+### 🛠️ Architecture & Backend
+- **PNR Tracking Resolution**:
+  - Integrated the GSRTC `/api/pnr` endpoint into the backend proxy to allow users to track buses using their Booking PNR number.
+  - Automatically identifies PNR formats (starts with "G" followed by digits), resolves the assigned `VEHICLE_NO` and Conductor Phone Number, and seamlessly pipes that data into the live tracking endpoints.
+- **Documentation Updates**:
+  - Created `api-info-omitted.md` and `api-endpoints-overview.md` to comprehensively map the entire upstream VTCOS architecture, detailing unused telemetry variables like Ignition, Manufacturer, and exact Route IDs.
+
+### 🎨 UI & Layout Improvements
+- **Dashboard Layout Overhaul (Desktop & Mobile)**:
+  - Eliminated hardcoded `calc()` height constraints from the dashboard wrappers. Transitioned the main container to a fully dynamic **CSS Flexbox stretch** layout (`flex-1`, `flex-col`) that correctly adapts to remaining screen height without leaving awkward empty padding.
+  - **Mobile Specifics**: Reordered grid elements (`order-1`, `order-2`) so the Search Bar remains at the top of the screen on mobile devices. Set an explicit `400px` minimum map height for mobile while disabling explicit column heights to prevent massive whitespace gaps below text content.
+  - Reduced redundant margins (e.g. `mt-5` to `sm:mt-5`) so mobile view is highly compact and tightly packed.
+- **Details Panel Refinements**:
+  - Replaced the "Route & Schedule" grouped section with a sleek, 2-column CSS Grid (`grid-cols-[auto_1fr]`), perfectly indenting wrapped text under their respective labels.
+  - Updated terminology ("Bus" instead of "Bus Type") and replaced text "to" with a clean arrow (`->`) for route names (e.g., `Veraval -> Baroda`).
+  - Reformatted the conductor phone number string natively in JSX with a Regex spaced layout (`xxx xxx xxxx`) for significantly better legibility.
+- **React-Leaflet Strict Mode Patch**:
+  - Fixed a notoriously common React 18 Strict Mode bug (`Map container is being reused`) and hot-reloading crash by injecting a strict mount-delay (`isMounted`) effect wrapper into `LiveMap.tsx`, completely bypassing Leaflet's double-invocation errors.
+
+---
+
 ## 🚀 v0.7 (Latest Stable / Published)
 *Focus: Live Bus Tracking Dashboard, Leaflet Map Integration, Backend SSL Bypasses, High-Contrast UI Fixes*
 

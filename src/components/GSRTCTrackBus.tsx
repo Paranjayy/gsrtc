@@ -120,14 +120,14 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
             <form onSubmit={handleSearchSubmit} className="flex flex-col gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Vehicle Registration Number
+                  Vehicle Reg No. / PNR Number
                 </label>
                 <div className="relative">
                   <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 rotate-45" />
                   <Input
                     value={regInput}
                     onChange={e => setRegInput(e.target.value)}
-                    placeholder="e.g. GJ-18-ZT-0206"
+                    placeholder="e.g. GJ-18-ZT-0206 or G227214486"
                     className="pl-9 h-10 w-full font-semibold uppercase text-sm placeholder:normal-case placeholder:font-normal"
                   />
                 </div>
@@ -159,10 +159,10 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
      Right 2/3 → search bar + live map
   ───────────────────────────────────────────────────────────── */
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 h-full">
 
       {/* ── LEFT COLUMN (33%) ── */}
-      <div className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-9rem)]">
+      <div className="lg:col-span-1 flex flex-col gap-4 lg:h-[calc(100vh-8.5rem)] order-2 lg:order-1">
 
         {/* Loading / empty placeholder */}
         {loading && !data && (
@@ -184,7 +184,7 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
         {data && (
           <>
             {/* Unified Vehicle Details Card */}
-            <Card className="shadow-sm border bg-card overflow-hidden shrink-0 p-0">
+            <Card className="shadow-sm border bg-card overflow-hidden shrink-0 p-0 h-full overflow-y-auto">
               <CardContent className="p-0">
                 {/* 1. Status Section */}
                 <div className="p-4 space-y-3">
@@ -232,34 +232,26 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
                   </div>
                 </div>
 
-                {/* 2. Route & Schedule Section */}
-                <div className="border-t">
-                  <div className="py-3 px-4 border-b bg-muted/20">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Info className="w-3.5 h-3.5 text-primary" />
-                      Route & Schedule
-                    </h3>
-                  </div>
-                  <div className="px-4 py-3 space-y-2.5 text-sm">
-                    {data.routeName !== 'N/A' && (
-                      <div>
-                        <span className="text-xs text-muted-foreground uppercase font-bold block">Active Route</span>
-                        <span className="font-semibold text-foreground">{data.routeName}</span>
-                      </div>
-                    )}
-                    {data.depotName !== 'N/A' && (
-                      <div>
-                        <span className="text-xs text-muted-foreground uppercase font-bold block">Assigned Depot</span>
-                        <span className="font-medium">{data.depotName}</span>
-                      </div>
-                    )}
-                    {data.serviceType !== 'N/A' && (
-                      <div>
-                        <span className="text-xs text-muted-foreground uppercase font-bold block">Service Type</span>
-                        <span className="font-medium">{data.serviceType}</span>
-                      </div>
-                    )}
-                  </div>
+                {/* 2. Route Section */}
+                <div className="border-t px-4 py-3 text-sm grid grid-cols-[auto_1fr] gap-x-3 gap-y-2">
+                  {data.routeName !== 'N/A' && (
+                    <>
+                      <div className="text-muted-foreground font-bold uppercase tracking-wider text-xs pt-[1px]">Route:</div>
+                      <div className="font-bold text-foreground leading-snug">{data.routeName.replace(/ to /gi, ' → ')}</div>
+                    </>
+                  )}
+                  {data.depotName !== 'N/A' && (
+                    <>
+                      <div className="text-muted-foreground font-bold uppercase tracking-wider text-xs pt-[1px]">Depot:</div>
+                      <div className="font-medium leading-snug">{data.depotName}</div>
+                    </>
+                  )}
+                  {data.serviceType !== 'N/A' && (
+                    <>
+                      <div className="text-muted-foreground font-bold uppercase tracking-wider text-xs pt-[1px]">Bus:</div>
+                      <div className="font-medium leading-snug">{data.serviceType}</div>
+                    </>
+                  )}
                 </div>
 
                 {/* 3. Checkpoints Section */}
@@ -318,9 +310,11 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
                       {data.conductorNumber !== 'N/A' && (
                         <div>
                           <span className="text-xs text-muted-foreground uppercase font-bold block">Contact</span>
-                          <a href={`tel:${data.conductorNumber}`} className="font-bold text-primary hover:underline flex items-center gap-1 mt-0.5">
+                          <a href={`tel:${data.conductorNumber}`} className="font-bold text-primary hover:underline flex items-center gap-1 mt-0.5 tracking-wide">
                             <Phone className="w-3.5 h-3.5" />
-                            {data.conductorNumber}
+                            {data.conductorNumber.length === 10 
+                              ? data.conductorNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')
+                              : data.conductorNumber}
                           </a>
                         </div>
                       )}
@@ -334,7 +328,7 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
       </div>
 
       {/* ── RIGHT COLUMN (66%) ── */}
-      <div className="lg:col-span-2 flex flex-col gap-4">
+      <div className="lg:col-span-2 flex flex-col gap-4 lg:h-[calc(100vh-8.5rem)] order-1 lg:order-2">
 
         {/* Search bar */}
         <Card className="shadow-sm border bg-card shrink-0 p-0">
@@ -342,14 +336,14 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
             <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
               <div className="flex-1 w-full">
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-                  Vehicle Registration Number
+                  Vehicle Registration Number or PNR
                 </label>
                 <div className="relative">
                   <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 rotate-45" />
                   <Input
                     value={regInput}
                     onChange={e => setRegInput(e.target.value)}
-                    placeholder="e.g. GJ-18-ZT-0206"
+                    placeholder="e.g. GJ-18-ZT-0206 or G227214486"
                     className="pl-9 h-9 w-full font-semibold uppercase text-sm placeholder:normal-case placeholder:font-normal"
                   />
                 </div>
@@ -357,7 +351,7 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-9 px-5 font-bold w-full sm:w-auto shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground text-sm mt-5"
+                className="h-9 px-5 font-bold w-full sm:w-auto shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:mt-5"
               >
                 {loading
                   ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Locating…</>
@@ -372,9 +366,9 @@ export default function GSRTCTrackBus({ onFirstSearch }: Props) {
           </CardContent>
         </Card>
 
-        {/* Live Map — explicit calc height so iframe/leaflet fills 100% with no white bars */}
-        <Card className="shadow-sm border bg-card overflow-hidden p-0" style={{ height: 'calc(100vh - 14.5rem)' }}>
-          <CardContent className="p-0 relative" style={{ height: '100%' }}>
+        {/* Live Map — flex fill */}
+        <Card className="shadow-sm border bg-card overflow-hidden p-0 flex-1 flex flex-col min-h-[400px] lg:min-h-0">
+          <CardContent className="p-0 relative flex-1">
             {data?.latitude && data?.longitude ? (
               <LiveMap latitude={data.latitude} longitude={data.longitude} />
             ) : (

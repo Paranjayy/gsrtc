@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -26,6 +26,15 @@ function MapUpdater({ lat, lng }: { lat: number; lng: number }) {
 }
 
 export default function LiveMap({ latitude, longitude }: { latitude: string; longitude: string }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  if (!isMounted) return null;
+
   const lat = parseFloat(latitude);
   const lng = parseFloat(longitude);
 

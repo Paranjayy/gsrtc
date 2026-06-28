@@ -51,10 +51,29 @@ export async function GET(request: Request) {
   }
 
   // Clean registration number (remove spaces and hyphens, uppercase)
-  const cleanedRegNo = regNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  let cleanedRegNo = regNo.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   const today = new Date().toISOString().split('T')[0];
+  let pnrConductorNumber = 'N/A';
 
   try {
+    // Check if the input is a PNR number (Starts with G or g, followed only by digits)
+    if (/^G\d+$/.test(cleanedRegNo)) {
+      const pnrData = await fetchInsecure('https://live.gsrtc.org/api/pnr', { pnrNo: cleanedRegNo });
+      
+      if (pnrData.status === 'success' && pnrData.result && pnrData.result.length > 0) {
+        const tripDetails = pnrData.result[0];
+        // Extract the actual vehicle number and clean it
+        if (tripDetails.VEHICLE_NO) {
+          cleanedRegNo = tripDetails.VEHICLE_NO.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
+        if (tripDetails.CONDUCTOR_MOBILE_NO) {
+          pnrConductorNumber = tripDetails.CONDUCTOR_MOBILE_NO;
+        }
+      } else {
+        return NextResponse.json({ error: 'Invalid PNR Number or trip not found' }, { status: 404 });
+      }
+    }
+
     // 1. Fetch live coordinates/status
     const liveData = await fetchInsecure('https://live.gsrtc.org/api/vehicle/live', {
       vehicleNo: cleanedRegNo,
@@ -83,7 +102,7 @@ export async function GET(request: Request) {
       serviceType: tooltipData.serviceType || 'N/A',
       depotName: tooltipData.depotName || 'N/A',
       conductorName: tooltipData.conductorName || 'N/A',
-      conductorNumber: tooltipData.conductorNumber || 'N/A',
+      conductorNumber: pnrConductorNumber !== 'N/A' ? pnrConductorNumber : (tooltipData.conductorNumber || 'N/A'),
       makerName: tooltipData.makerName || 'N/A',
       receivedDate: tooltipData.receivedDate || locationInfo?.lastArrivalDateTime || 'N/A',
       lastStation: locationInfo?.lastBusStation || 'N/A',
