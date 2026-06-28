@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "GSRTC Bus Booking App",
-  description: "Advance bus ticket booking and reservation platform for GSRTC",
+  description: "Live GPS bus tracking, advance ticket booking and reservation platform for GSRTC",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
       className={`h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col selection:bg-primary selection:text-primary-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

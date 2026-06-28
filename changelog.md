@@ -4,6 +4,33 @@ This changelog outlines all technical updates, architectural additions, and user
 
 ---
 
+## 🚀 v0.7 (Latest Stable / Published)
+*Focus: Live Bus Tracking Dashboard, Leaflet Map Integration, Backend SSL Bypasses, High-Contrast UI Fixes*
+
+### 🛠️ Architecture & Backend
+- **Live Tracking API Proxy (`/api/track`)**:
+  - Engineered a proxy route to handle live location requests and merge data from both `/api/vehicle/live` and `/api/vehicle/tooltip` endpoints.
+  - Implemented core Node.js `https.request` with a custom agent to successfully bypass untrusted SSL certificates (`NODE_TLS_REJECT_UNAUTHORIZED`) that were causing native Next.js `fetch` to fail.
+- **Dynamic Page Titles**:
+  - Implemented React `useEffect` listeners to dynamically toggle browser tab titles between "GSRTC Bus Booking App" and "GSRTC Live Bus Tracking" when the tracking dashboard is activated.
+
+### 🎨 UI & Layout Improvements
+- **Unified Vehicle Dashboard Card**:
+  - Consolidated 4 separate data blocks (Status, Route, Trip Progress, Duty Staff) into a single, cohesive interface panel separated by clean `border-t` dividers to eliminate uneven paddings and scrollbar clipping.
+  - Enforced `p-0` on outer shadcn cards to strip default margins and take precise absolute control of padding alignments.
+- **High-Contrast Text Selection**:
+  - Implemented tailwind `selection:bg-primary` and `selection:text-primary-foreground` globally on the `<body>` element to prevent OS-level text-highlight rendering from washing out font visibility.
+- **Responsive 2-Column Grid**:
+  - Engineered a split view (33% info pane, 66% map pane) that activates seamlessly post-search, locking vertical boundaries to precisely `calc(100vh - 14.5rem)` and ensuring all data fits exactly on one screen without vertical scrolling.
+
+### ⚡ Feature Enhancements
+- **Smooth Map Panning via Leaflet**:
+  - Replaced static Google Maps `<iframe>` embeds with a fully interactive OpenStreetMap integration using `react-leaflet`.
+  - Implemented a specialized `MapUpdater` component to trigger seamless `map.flyTo()` location glides during 30-second background auto-refreshes instead of forcing complete map remounts.
+  - Resolved SSR conflicts by using `next/dynamic` to safely load the engine client-side, and explicitly linked official marker PNG assets to prevent Next.js build distortion.
+
+---
+
 ## 🚀 v0.6 (Latest Stable / Published)
 *Focus: SQLite Autocomplete Search, Prefix Match Priority, Keyboard Scroll-into-view, Bus Class Icons and Color Coding*
 

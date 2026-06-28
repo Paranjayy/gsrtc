@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import GSRTCSearchForm from '@/components/GSRTCSearchForm';
 import GSRTCBusList from '@/components/GSRTCBusList';
 import GSRTCSeatLayout from '@/components/GSRTCSeatLayout';
 import GSRTCPassengerForm from '@/components/GSRTCPassengerForm';
+import GSRTCTrackBus from '@/components/GSRTCTrackBus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
@@ -17,11 +18,19 @@ import {
   Coins, CreditCard, Sparkles, Navigation, Loader2
 } from 'lucide-react';
 
-type BookingStep = 'search' | 'seat-selection' | 'summary' | 'success';
+type BookingStep = 'search' | 'seat-selection' | 'summary' | 'success' | 'track';
 
 export default function Home() {
   // Booking States
   const [step, setStep] = useState<BookingStep>('search');
+  const [trackingActive, setTrackingActive] = useState(false);
+
+  // Dynamically update browser tab title based on current step
+  useEffect(() => {
+    document.title = step === 'track'
+      ? 'GSRTC Live Bus Tracking'
+      : 'GSRTC Bus Booking App';
+  }, [step]);
   const [searchParams, setSearchParams] = useState<{
     origin: string;
     destination: string;
@@ -132,6 +141,7 @@ export default function Home() {
 
   const handleReset = () => {
     setStep('search');
+    setTrackingActive(false);
     setSearchParams(null);
     setSelectedBus(null);
     setSelectedSeats([]);
@@ -172,10 +182,10 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <nav className="hidden md:flex gap-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              <span className="hover:text-foreground cursor-pointer transition-colors" onClick={handleReset}>Home</span>
-              <span className="hover:text-foreground cursor-pointer transition-colors">Track Bus</span>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-4 md:gap-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <span className={`hover:text-foreground cursor-pointer transition-colors ${step === 'search' ? 'text-foreground border-b-2 border-primary pb-0.5' : ''}`} onClick={handleReset}>Home</span>
+              <span className={`hover:text-foreground cursor-pointer transition-colors ${step === 'track' ? 'text-foreground border-b-2 border-primary pb-0.5' : ''}`} onClick={() => setStep('track')}>Track Bus</span>
             </nav>
             <ThemeToggle />
           </div>
@@ -183,10 +193,10 @@ export default function Home() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-6">
+      <main className={`flex-1 container mx-auto px-4 space-y-6 ${step === 'track' ? 'py-4 max-w-7xl' : 'py-8 max-w-5xl'}`}>
         
         {/* Banner Title */}
-        {step !== 'summary' && (
+        {step !== 'summary' && step !== 'track' && (
           <div className="text-center space-y-2 py-4">
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center justify-center gap-2">
               <Sparkles className="w-6 h-6 text-indigo-500 animate-pulse" />
@@ -194,6 +204,19 @@ export default function Home() {
             </h1>
             <p className="text-muted-foreground text-xs md:text-sm max-w-md mx-auto">
               Book your bus tickets quickly and securely using our clean, high-performance interface.
+            </p>
+          </div>
+        )}
+
+        {/* Tracking Mode Banner Title — hidden once user tracks a vehicle */}
+        {step === 'track' && !trackingActive && (
+          <div className="text-center space-y-2 py-4">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center justify-center gap-2">
+              <Navigation className="w-6 h-6 text-indigo-500" />
+              GSRTC Live Bus Tracking
+            </h1>
+            <p className="text-muted-foreground text-xs md:text-sm max-w-md mx-auto">
+              Enter any GSRTC bus registration number to view its real-time GPS location, speed, route, and staff details.
             </p>
           </div>
         )}
@@ -223,6 +246,11 @@ export default function Home() {
               />
             )}
           </div>
+        )}
+
+        {/* STEP 1.5: Live Bus Tracking */}
+        {step === 'track' && (
+          <GSRTCTrackBus onFirstSearch={() => setTrackingActive(true)} />
         )}
 
         {/* STEP 2: Seat Selection and Passenger Details */}
@@ -649,10 +677,9 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-background border-t py-6 text-center text-xs text-muted-foreground mt-12 leading-relaxed print:hidden">
-        <div className="container mx-auto space-y-1">
-          <p>© {new Date().getFullYear()} Gujarat State Road Transport Corporation (GSRTC) Clone.</p>
-          <p>Built for educational demonstration. Enhanced UI, zero-latency caching, and client-side form validations.</p>
+      <footer className="bg-background border-t py-2 text-center text-[10px] text-muted-foreground/60 mt-auto print:hidden">
+        <div className="container mx-auto">
+          © {new Date().getFullYear()} GSRTC Clone · Educational Use Only
         </div>
       </footer>
 
